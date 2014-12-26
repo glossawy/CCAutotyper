@@ -63,7 +63,7 @@ public class AutotyperWindow extends JFrame {
 	}
 
 	@Override
-	public void setVisible(boolean visible) {
+	public void setVisible(final boolean visible) {
 		if (!EventQueue.isDispatchThread()) {
 			EventQueue.invokeLater(new Runnable() {
 

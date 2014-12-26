@@ -60,6 +60,7 @@ import java.awt.event.KeyEvent;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.List;
@@ -446,7 +447,7 @@ public class Keyboard implements NativeKeyListener {
 	 * @throws IOException
 	 */
 	public void typeFile(File f) throws IOException {
-		final List<String> lines = Files.readAllLines(Paths.get(f.toURI()));
+		final List<String> lines = Files.readAllLines(Paths.get(f.toURI()), StandardCharsets.UTF_8);
 
 		this.mode = KeyboardMode.ACTIVE;
 		final MemoryUnit mem = MemoryUnit.KILOBYTES;
@@ -455,36 +456,36 @@ public class Keyboard implements NativeKeyListener {
 
 		boolean block = false;
 		outer:
-		for (final String l : lines) {
-			// Ignore Empty Lines and Comments
-			if (l.length() == 0) {
-				continue;
-			} else if (l.startsWith("--[[")) {
-				block = true;
-				continue;
-			} else if (block && (l.endsWith("]]") || l.endsWith("]]--"))) {
-				block = false;
-				continue;
-			} else if (l.startsWith("--")) {
-				continue;
-			}
-
-			// Basically a copy of type(String) but this gives us more control
-			// to pause and stop on a per character basis, not a per line basis.
-			Console.info(this.mode);
-			final char[] characters = l.trim().toCharArray();
-			for (final char c : characters) {
-				while ((this.mode == KeyboardMode.PAUSED) || this.alt) {
-					IOUtils.sleep(1000);
-				}
-				if (this.mode == KeyboardMode.INACTIVE) {
-					break outer;
+			for (final String l : lines) {
+				// Ignore Empty Lines and Comments
+				if (l.length() == 0) {
+					continue;
+				} else if (l.startsWith("--[[")) {
+					block = true;
+					continue;
+				} else if (block && (l.endsWith("]]") || l.endsWith("]]--"))) {
+					block = false;
+					continue;
+				} else if (l.startsWith("--")) {
+					continue;
 				}
 
-				type(c);
+				// Basically a copy of type(String) but this gives us more control
+				// to pause and stop on a per character basis, not a per line basis.
+				Console.info(this.mode);
+				final char[] characters = l.trim().toCharArray();
+				for (final char c : characters) {
+					while ((this.mode == KeyboardMode.PAUSED) || this.alt) {
+						IOUtils.sleep(1000);
+					}
+					if (this.mode == KeyboardMode.INACTIVE) {
+						break outer;
+					}
+
+					type(c);
+				}
+				doType(VK_ENTER);
 			}
-			doType(VK_ENTER);
-		}
 
 		Console.debug("FINISHED");
 		this.mode = KeyboardMode.INACTIVE;
