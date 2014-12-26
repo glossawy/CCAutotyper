@@ -1,19 +1,3 @@
-/*
- * Argus Installer v2 -- A Better School Zip Alternative Copyright (C) 2014 Matthew
- * Crocco
- * 
- * This program is free software: you can redistribute it and/or modify it under the
- * terms of the GNU General Public License as published by the Free Software
- * Foundation, either version 3 of the License, or (at your option) any later
- * version.
- * 
- * This program is distributed in the hope that it will be useful, but WITHOUT ANY
- * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
- * PARTICULAR PURPOSE. See the GNU General Public License for more details.
- * 
- * You should have received a copy of the GNU General Public License along with this
- * program. If not, see <http://www.gnu.org/licenses/>.
- */
 package com.mattc.autotyper.util;
 
 import java.util.Map;
@@ -32,6 +16,14 @@ import com.google.common.collect.Maps;
 public final class OS {
 
 	// Totally not inspired by java.util.concurrent.TimeUnit
+	/**
+	 * Enumeration to support representation and conversion between different Memory
+	 * Units such as Bytes, Kilobytes, Megabytes, etc. <br />
+	 * <br />
+	 * Current this does not support Non-SI Units (KiB, MiB, GiB)
+	 * 
+	 * @author Matthew
+	 */
 	public enum MemoryUnit {
 		BYTES("B") {
 			@Override
@@ -179,6 +171,12 @@ public final class OS {
 		}
 	}
 
+	/**
+	 * Represents a very simplified categorization of 32 Bit and 64 bit
+	 * architectures.
+	 * 
+	 * @author Matthew
+	 */
 	public enum Bit {
 		BIT_32("x86", "32-bit", 32), BIT_64("x64", "64-bit", 64);
 
@@ -214,6 +212,7 @@ public final class OS {
 	public static final OS UNIX = new OS("", new String[] { "lin", "linux", "nux" });
 	public static final OS UNSUPPORTED = new OS("", new String[] {});
 
+	// Why? Because.
 	private static final Map<OS, String> nameLookup = Maps.newHashMap();
 
 	private static final Runtime rt = Runtime.getRuntime();

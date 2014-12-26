@@ -56,11 +56,7 @@ import java.awt.AWTException;
 import java.awt.Rectangle;
 import java.awt.Robot;
 import java.awt.Toolkit;
-import java.awt.datatransfer.Clipboard;
-import java.awt.datatransfer.ClipboardOwner;
-import java.awt.datatransfer.DataFlavor;
-import java.awt.datatransfer.Transferable;
-import java.awt.datatransfer.UnsupportedFlavorException;
+import java.awt.event.KeyEvent;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
@@ -70,13 +66,38 @@ import java.util.List;
 
 import javax.imageio.ImageIO;
 
+import org.jnativehook.keyboard.NativeKeyEvent;
+import org.jnativehook.keyboard.NativeKeyListener;
+
 import com.mattc.autotyper.util.Console;
+import com.mattc.autotyper.util.IOUtils;
 import com.mattc.autotyper.util.OS.MemoryUnit;
 
-public class Keyboard implements ClipboardOwner {
+/**
+ * Mimics the Keyboard to a large extent. <br />
+ * <br />
+ * Makes extensive use of {@link java.awt.Robot}, JNativeHooks and switching between
+ * KeyboardMode's to mimic user input after being given a character, String or File.
+ * To make use of JNativeHooks, Keyboard does implement {@link NativeKeyListener} but
+ * must be manually registered. <br />
+ * <br />
+ * Making use of {@link KeyboardMode}, this Keyboard can exist in 1 of 3 states:
+ * ACTIVE, PAUSED, or INACTIVE. ACTIVE means the keyboard is currently typing.
+ * INACTIVE means the keyboard is not typing nor in the middle of a typing action,
+ * and PAUSED means the Keyboard is not typing, but IS in the middle of a session.
+ * 
+ * @author Matthew
+ */
+public class Keyboard implements NativeKeyListener {
 
 	private final Robot robo;
+	private volatile KeyboardMode mode = KeyboardMode.INACTIVE;
 
+	/**
+	 * Create an instance of Keyboard with the given delay between Key Presses.
+	 * 
+	 * @param actionDelay
+	 */
 	public Keyboard(int actionDelay) {
 		try {
 			this.robo = new Robot();
@@ -87,7 +108,13 @@ public class Keyboard implements ClipboardOwner {
 		}
 	}
 
+	/**
+	 * Type a Single Character
+	 * 
+	 * @param c
+	 */
 	public void type(char c) {
+		// A bit verbose, but necessary.
 		switch (c) {
 		case 'a':
 			doType(VK_A);
@@ -388,22 +415,46 @@ public class Keyboard implements ClipboardOwner {
 		}
 	}
 
+	/**
+	 * Type an entire String out, prints character by character to mimic user input.
+	 * 
+	 * @param text
+	 */
 	public void type(String text) {
 		final char[] chars = text.toCharArray();
+		this.mode = KeyboardMode.ACTIVE;
 
 		for (final char c : chars) {
+			while ((this.mode == KeyboardMode.PAUSED) || this.alt) {
+				IOUtils.sleep(1000);
+			}
+			if (this.mode == KeyboardMode.INACTIVE) {
+				break;
+			}
+
 			type(c);
 		}
+
+		this.mode = KeyboardMode.INACTIVE;
 	}
 
+	/**
+	 * Take an entire file and type the entirety of it's contents. This will print
+	 * character by character to mimic user input.
+	 * 
+	 * @param f
+	 * @throws IOException
+	 */
 	public void typeFile(File f) throws IOException {
 		final List<String> lines = Files.readAllLines(Paths.get(f.toURI()));
 
+		this.mode = KeyboardMode.ACTIVE;
 		final MemoryUnit mem = MemoryUnit.KILOBYTES;
 		final long size = mem.convert(f.length(), MemoryUnit.BYTES);
 		Console.info(String.format("Writing File of Size %,d KB consisting of %,d lines", size, lines.size()));
 
-		boolean block = true;
+		boolean block = false;
+		outer:
 		for (final String l : lines) {
 			// Ignore Empty Lines and Comments
 			if (l.length() == 0) {
@@ -418,19 +469,70 @@ public class Keyboard implements ClipboardOwner {
 				continue;
 			}
 
-			type(l.trim());
+			// Basically a copy of type(String) but this gives us more control
+			// to pause and stop on a per character basis, not a per line basis.
+			Console.info(this.mode);
+			final char[] characters = l.trim().toCharArray();
+			for (final char c : characters) {
+				while ((this.mode == KeyboardMode.PAUSED) || this.alt) {
+					IOUtils.sleep(1000);
+				}
+				if (this.mode == KeyboardMode.INACTIVE) {
+					break outer;
+				}
+
+				type(c);
+			}
 			doType(VK_ENTER);
 		}
+
+		Console.debug("FINISHED");
+		this.mode = KeyboardMode.INACTIVE;
 	}
 
+	/**
+	 * Alter the delay between key presses in milliseconds
+	 * 
+	 * @param delay
+	 */
 	public void setInputDelay(int delay) {
 		this.robo.setAutoDelay(delay);
 	}
 
+	/**
+	 * Alter the current state of the Keyboard
+	 * 
+	 * @param mode
+	 */
+	public void setKeyboardMode(KeyboardMode mode) {
+		this.mode = mode;
+	}
+
+	/**
+	 * Get the delay between key presses in milliseconds
+	 * 
+	 * @return
+	 */
 	public int getInputDelay() {
 		return this.robo.getAutoDelay();
 	}
 
+	/**
+	 * Get the current state of the Keyboard
+	 * 
+	 * @return
+	 */
+	public KeyboardMode getKeyboardMode() {
+		return this.mode;
+	}
+
+	/**
+	 * Take a picture of the User's entire desktop and save it to
+	 * cc-autotyper-crash.png <br />
+	 * <br />
+	 * This would be used in the case of an Uncaught Exception but currently is
+	 * unused.
+	 */
 	public void writeCrashImage() {
 		try {
 			final File crashFile = new File("logs", "cc-autotyper-crash.png");
@@ -441,10 +543,25 @@ public class Keyboard implements ClipboardOwner {
 		}
 	}
 
+	/**
+	 * Internal Method for pressing keys. Very convenient for Key Strokes. (i.e.
+	 * Shift + 1 to get !). <br />
+	 * <br />
+	 * See {@link #doType(int[], int, int)}
+	 * 
+	 * @param keycodes
+	 */
 	private void doType(int... keycodes) {
 		doType(keycodes, 0, keycodes.length);
 	}
 
+	/**
+	 * Recursively Press and Release Keys to mimic Key Strokes.
+	 * 
+	 * @param codes
+	 * @param offset
+	 * @param length
+	 */
 	private void doType(int[] codes, int offset, int length) {
 		if (length == 0) return;
 
@@ -453,28 +570,86 @@ public class Keyboard implements ClipboardOwner {
 		this.robo.keyRelease(codes[offset]);
 	}
 
-	public Transferable toTransferable(String text) {
-		return new Transferable() {
+	private volatile boolean alt = false;
+	private volatile boolean bspace = false;
 
-			@Override
-			public boolean isDataFlavorSupported(DataFlavor flavor) {
-				return false;
-			}
+	@Override
+	public void nativeKeyTyped(NativeKeyEvent e) {
 
-			@Override
-			public DataFlavor[] getTransferDataFlavors() {
-				return new DataFlavor[0];
-			}
+		// Ignore if alt is not pressed, it's all we care about.
+		if (!this.alt) return;
 
-			@Override
-			public Object getTransferData(DataFlavor flavor) throws UnsupportedFlavorException, IOException {
-				return text;
+		String log = this.mode.name() + "...";
+		if (this.alt && (e.getKeyChar() == 'p')) {
+			// Toggle for Alt + P
+			switch (this.mode) {
+			case ACTIVE:
+				this.mode = KeyboardMode.PAUSED;
+				break;
+			case PAUSED:
+				this.mode = KeyboardMode.ACTIVE;
+				break;
+			default:
+				break;
 			}
-		};
+		} else if (this.alt && (e.getKeyChar() == 's')) {
+			// Terminate Current Session for Alt + S
+			this.mode = KeyboardMode.INACTIVE;
+		}
+
+		log = "Keyboard set to " + this.mode.name() + " from " + log;
+		Console.debug(log);
+		IOUtils.sleep(20);
 	}
 
 	@Override
-	public void lostOwnership(Clipboard clipboard, Transferable contents) {
+	public void nativeKeyReleased(NativeKeyEvent e) {
+		// If Keyboard is Active and Left Alt is released
+		if ((e.getKeyCode() == NativeKeyEvent.VC_ALT_L) && (this.mode == KeyboardMode.ACTIVE)) {
+			this.alt = false;
 
+			// Delete the 1 or 2 stray characters
+			// Alt + P will print P in computer craft, this deletes the P
+			// if the user did not.
+			if (!this.bspace) {
+				doType(KeyEvent.VK_BACK_SPACE);
+			} else {
+				this.bspace = false;
+			}
+
+			doType(KeyEvent.VK_BACK_SPACE);
+		}
 	}
+
+	@Override
+	public void nativeKeyPressed(NativeKeyEvent e) {
+		// If Left Alt is Pressed, set the Alt Flag to true.
+		if (e.getKeyCode() == NativeKeyEvent.VC_ALT_L) {
+			this.alt = true;
+		} else if (this.alt && (e.getKeyCode() == NativeKeyEvent.VC_BACKSPACE)) {
+			this.bspace = true;
+		}
+	}
+
+	/**
+	 * Enumerates the 3 State in which a Keyboard can exist:
+	 * <ul>
+	 * <li><b>ACTIVE</b> - The Keyboard is Typing and is in an Active Session</li>
+	 * <li><b>PAUSED</b> - The Keyboard is Not Typing but is still in an Active
+	 * Session</li>
+	 * <li><b>INACTIVE</b> - The Keyboard is Not Typing and is NOT in an Active
+	 * Session. Idle.</li>
+	 * </ul>
+	 * 
+	 * @author Matthew
+	 */
+	public enum KeyboardMode {
+		/** Is Typing & Is In an Active Session */
+		ACTIVE,
+		/** Is Not Typing & Is In An Active Session */
+		PAUSED,
+		/** Is Not Typing & Is Not In An Active Session */
+		INACTIVE;
+	}
+
 }

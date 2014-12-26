@@ -1,19 +1,3 @@
-/*
- * Argus Installer v2 -- A Better School Zip Alternative Copyright (C) 2014 Matthew
- * Crocco
- * 
- * This program is free software: you can redistribute it and/or modify it under the
- * terms of the GNU General Public License as published by the Free Software
- * Foundation, either version 3 of the License, or (at your option) any later
- * version.
- * 
- * This program is distributed in the hope that it will be useful, but WITHOUT ANY
- * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
- * PARTICULAR PURPOSE. See the GNU General Public License for more details.
- * 
- * You should have received a copy of the GNU General Public License along with this
- * program. If not, see <http://www.gnu.org/licenses/>.
- */
 package com.mattc.autotyper.util;
 
 import java.io.BufferedInputStream;
@@ -39,15 +23,11 @@ import com.google.common.io.Files;
 import com.mattc.autotyper.util.OS.MemoryUnit;
 
 /**
- * A Collection of Utilities dedicated to the try-catch mess that is <br />
- * java.io. We ignore java.nio since this application tries to maintain compatibility
- * with <br />
- * at least Java SE 1.6. <br />
+ * A Collection of Utilities dedicated to the try-catch mess that is java.io. We
+ * ignore java.nio since this application tries to maintain compatibility with at
+ * least Java SE 1.6. <br />
  * <br />
- * Most of these methods are general use, but {@link #download(URL, String)} is
- * somewhat <br />
- * application specific and is tied to the program
- * {@link com.mattc.argus2.util.Console} utility.
+ * Most of these methods are general use.
  * 
  * @author Matthew
  *
@@ -90,7 +70,6 @@ public class IOUtils {
 		}
 	}
 
-	// I like this. I like this a lot.
 	/**
 	 * Load Properties from a File into a Properties object.
 	 * 
@@ -415,16 +394,6 @@ public class IOUtils {
 			return name.substring(name.lastIndexOf('.') + 1);
 	}
 
-	public static final void close(Closeable stream) {
-		if (stream == null) return;
-
-		try {
-			stream.close();
-		} catch (final IOException e) {
-			Console.exception(e);
-		}
-	}
-
 	/**
 	 * Closes any Closeable, meant for Streams to clean up finally blocks.
 	 * 
@@ -504,6 +473,18 @@ public class IOUtils {
 		}
 
 		return temp;
+	}
+
+	/**
+	 * Small Utility to consume the InterruptedException associated wiht Thread.sleep
+	 * 
+	 * @param l
+	 */
+	public static void sleep(long l) {
+		try {
+			Thread.sleep(l);
+		} catch (final InterruptedException e) {
+		}
 	}
 
 }

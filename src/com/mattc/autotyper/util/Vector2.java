@@ -1,19 +1,3 @@
-/*
- * Argus Installer v2 -- A Better School Zip Alternative Copyright (C) 2014 Matthew
- * Crocco
- * 
- * This program is free software: you can redistribute it and/or modify it under the
- * terms of the GNU General Public License as published by the Free Software
- * Foundation, either version 3 of the License, or (at your option) any later
- * version.
- * 
- * This program is distributed in the hope that it will be useful, but WITHOUT ANY
- * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
- * PARTICULAR PURPOSE. See the GNU General Public License for more details.
- * 
- * You should have received a copy of the GNU General Public License along with this
- * program. If not, see <http://www.gnu.org/licenses/>.
- */
 package com.mattc.autotyper.util;
 
 import java.awt.Dimension;
@@ -22,9 +6,10 @@ import java.awt.Point;
 /**
  * Represents a Two Dimensional Vector. <br />
  * <br />
- * This can be used to represent either a (x, y) coordinate or to just contain <br />
- * 2 values. Such as Width and Height. This is extremely simplified (lightweight) <br />
- * to be used for GUI Positioning.
+ * This can be used to represent either a (x, y) coordinate or to just contain 2
+ * values. Such as Width and Height. This is extremely simplified (lightweight) to be
+ * used for GUI Positioning and supports conversion to and from
+ * {@link java.awt.Dimension} and {@link java.awt.Point}.
  * 
  * @author Matthew
  *
@@ -58,6 +43,78 @@ public class Vector2 {
 		this.y = y;
 	}
 
+	public Vector2 add(Vector2 other) {
+		this.x += other.x;
+		this.y += other.y;
+
+		return this;
+	}
+
+	public Vector2 sub(Vector2 other) {
+		this.x -= other.x;
+		this.y -= other.y;
+
+		return this;
+	}
+
+	public Vector2 scl(int scalar) {
+		this.x *= scalar;
+		this.y *= scalar;
+
+		return this;
+	}
+
+	public Vector2 scl(int xScl, int yScl) {
+		this.x *= xScl;
+		this.y *= yScl;
+
+		return this;
+	}
+
+	public Vector2 scl(Vector2 sclVect) {
+		this.x *= sclVect.x;
+		this.y *= sclVect.y;
+
+		return this;
+	}
+
+	public int dot(Vector2 other) {
+		return (this.x * other.x) + (this.y * other.y);
+	}
+
+	public int crs(Vector2 other) {
+		return (this.x * other.y) - (this.y * other.x);
+	}
+
+	public Vector2 mulAdd(Vector2 vect, int scalar) {
+		return add(vect.scl(scalar));
+	}
+
+	public Vector2 mulAdd(Vector2 vect, Vector2 scl) {
+		return add(vect.scl(scl));
+	}
+
+	public int dist(Vector2 other) {
+		final int dx = this.x - other.x;
+		final int dy = this.y - other.y;
+		return (int) Math.round(Math.sqrt((dx * dx) + (dy * dy)));
+	}
+
+	public int dist2(Vector2 other) {
+		final int dx = this.x - other.x;
+		final int dy = this.y - other.y;
+
+		return (dx * dx) + (dy * dy);
+	}
+
+	public int len() {
+		return (int) Math.round(Math.sqrt((this.x * this.x) + (this.y * this.y)));
+	}
+
+	public int len2() {
+		return (this.x * this.x) + (this.y * this.y);
+	}
+
 	public Vector2 cpy() {
 		return new Vector2(this);
 	}
@@ -68,6 +125,13 @@ public class Vector2 {
 
 	public int getY() {
 		return this.y;
+	}
+
+	public Vector2 toZero() {
+		this.x = 0;
+		this.y = 0;
+
+		return this;
 	}
 
 	public Dimension toDimensionAWT() {
@@ -84,6 +148,14 @@ public class Vector2 {
 
 	public static Vector2 toVector2(Point p) {
 		return new Vector2(p.x, p.y);
+	}
+
+	public boolean isUnit() {
+		return (this.x == 1) && (this.y == 1);
+	}
+
+	public boolean isZero() {
+		return (this.x == 0) && (this.y == 0);
 	}
 
 	@Override

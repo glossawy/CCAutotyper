@@ -1,5 +1,12 @@
 package com.mattc.autotyper;
 
+/**
+ * Enumerates all Strings used in this Program that should be altered. <br />
+ * <br />
+ * Could possibly be used for Localization in the future. [Localization Keys]
+ * 
+ * @author Matthew
+ */
 public class Strings {
 
 	public static final String FLAG_GUI = "gui";
