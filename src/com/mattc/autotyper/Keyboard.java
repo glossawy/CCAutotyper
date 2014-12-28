@@ -427,7 +427,7 @@ public class Keyboard implements NativeKeyListener {
 
 		for (final char c : chars) {
 			while ((this.mode == KeyboardMode.PAUSED) || this.alt) {
-				IOUtils.sleep(1000);
+				IOUtils.sleep(200);
 			}
 			if (this.mode == KeyboardMode.INACTIVE) {
 				break;
@@ -472,11 +472,10 @@ public class Keyboard implements NativeKeyListener {
 
 				// Basically a copy of type(String) but this gives us more control
 				// to pause and stop on a per character basis, not a per line basis.
-				Console.info(this.mode);
 				final char[] characters = l.trim().toCharArray();
 				for (final char c : characters) {
 					while ((this.mode == KeyboardMode.PAUSED) || this.alt) {
-						IOUtils.sleep(1000);
+						IOUtils.sleep(200);
 					}
 					if (this.mode == KeyboardMode.INACTIVE) {
 						break outer;
@@ -596,6 +595,7 @@ public class Keyboard implements NativeKeyListener {
 		} else if (this.alt && (e.getKeyChar() == 's')) {
 			// Terminate Current Session for Alt + S
 			this.mode = KeyboardMode.INACTIVE;
+			this.alt = false;
 		}
 
 		log = "Keyboard set to " + this.mode.name() + " from " + log;

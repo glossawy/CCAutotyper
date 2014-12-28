@@ -9,7 +9,7 @@ public class Ref {
 
 	public static final String APP_ID = "com.mattc.ccautotyper";
 	public static final String TITLE = "CC Autotyper";
-	public static final String AUTHOR = "Matthew Crocco (Matt";
-	public static final String VERSION = "v0.2a";
+	public static final String AUTHOR = "Matthew Crocco (MatthewC529)";
+	public static final String VERSION = "v1.0a";
 
 }

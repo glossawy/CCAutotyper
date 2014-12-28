@@ -87,8 +87,10 @@ public class Autotyper {
 	 */
 	public void launch(String[] args) {
 		if (args[0].equalsIgnoreCase(FLAG_GUI)) {
+			printCopyrightStatement(true);
 			this.gui.setVisible(true);
 		} else {
+			printCopyrightStatement(false);
 			final File f = parseArgs(args);
 			try {
 				Thread.sleep(this.waitTime);
@@ -162,6 +164,10 @@ public class Autotyper {
 		return __instance;
 	}
 
+	public static void exit() {
+		System.exit(0);
+	}
+
 	/**
 	 * Register a NativeKeyListener to receive ALL KeyEvents
 	 * 
@@ -202,7 +208,6 @@ public class Autotyper {
 		}
 
 		// If initial setup is ready, print Copyright
-		printCopyrightStatement();
 		if (args.length == 0) {
 			printUsage();
 			System.exit(0);
@@ -284,8 +289,10 @@ public class Autotyper {
 	/**
 	 * Grab and Print out Copyright Statement or Fail Fast
 	 */
-	private static void printCopyrightStatement() {
-		System.out.println();
+	public static void printCopyrightStatement(boolean gui) {
+		if (!gui) {
+			System.out.println();
+		}
 		InputStream is = null;
 		ByteArrayOutputStream bos = null;
 
@@ -296,6 +303,7 @@ public class Autotyper {
 
 			if (is == null) {
 				Console.error("Copyright Statement Not Found! Exiting...");
+				IOUtils.closeSilently(bos);
 				System.exit(-3);
 			}
 
@@ -303,15 +311,18 @@ public class Autotyper {
 				bos.write(buf, 0, c);
 			}
 
-			System.out.println(bos.toString());
+			if (gui) {
+				JOptionPane.showMessageDialog(null, bos.toString(), "Copyright & Warranty", JOptionPane.INFORMATION_MESSAGE);
+			} else {
+				System.out.println(bos.toString());
+				System.out.println();
+			}
 		} catch (final Exception e) {
 			Console.exception(e);
 		} finally {
 			IOUtils.closeSilently(is);
 			IOUtils.closeSilently(bos);
 		}
-
-		System.out.println();
 	}
 
 	/**
