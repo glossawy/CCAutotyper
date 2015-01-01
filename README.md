@@ -1,9 +1,7 @@
 CCAutotyper [![Build Status](https://travis-ci.org/Matt529/CCAutotyper.svg)](https://travis-ci.org/Matt529/CCAutotyper)
 ===========
----
 An Autotyper for ComputerCraft players who use servers that have HTTP Disabled!
 
----
 
 ### Quick Start/How To
 ---
@@ -19,7 +17,7 @@ and a basic example of a command line execution would be
 ```
 java -jar ccautotyper.jar paste <pastebin_code>
 ```
----
+
 ### Parameters
 ---
 | Parameter  | Description |
@@ -36,7 +34,7 @@ The Required Parameters must be in the order ```[file|url|paste|gui] <location>`
 ```
 java -jar ccautotyper.jar [file|url|paste|gui] <location> [Optional Parameters...]
 ```
----
+
 ### Contributions
 ---
 
