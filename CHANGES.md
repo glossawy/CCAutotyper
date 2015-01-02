@@ -24,6 +24,7 @@ An Autotyper for ComputerCraft players who use servers that have HTTP Disabled!
 - LocationHandler.URL now does the same HTTP Response check that LocationHandler.PASTE does. 
 - System.out is now overridden to ignore any messages that just contain "Yo" which was prompted by RSyntaxTextArea not removing a Test Line. This should not impact Console calls.
 - Foundations for a JavaFX GUI Implementation
+
 ---
 
 ### v0.2b to v1.0a
@@ -33,6 +34,7 @@ An Autotyper for ComputerCraft players who use servers that have HTTP Disabled!
 - Executables
 - Archive Split
 - Refined Key Bindings
+
 ---
 
 ### v0.2a to v0.2b
