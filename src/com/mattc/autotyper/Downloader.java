@@ -18,8 +18,6 @@ public class Downloader {
 
 	public static final String PASTEBIN_URL = "http://www.pastebin.com/raw.php?i=%s";
 
-	// TODO Github?
-
 	/**
 	 * Retrieve raw text file from Pastebin using the given Paste Code.
 	 * 

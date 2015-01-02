@@ -1,3 +1,19 @@
+/*
+ * Argus Installer v2 -- A Better School Zip Alternative Copyright (C) 2014 Matthew
+ * Crocco
+ * 
+ * This program is free software: you can redistribute it and/or modify it under the
+ * terms of the GNU General Public License as published by the Free Software
+ * Foundation, either version 3 of the License, or (at your option) any later
+ * version.
+ * 
+ * This program is distributed in the hope that it will be useful, but WITHOUT ANY
+ * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
+ * PARTICULAR PURPOSE. See the GNU General Public License for more details.
+ * 
+ * You should have received a copy of the GNU General Public License along with this
+ * program. If not, see <http://www.gnu.org/licenses/>.
+ */
 package com.mattc.autotyper.util;
 
 import java.util.Map;
@@ -17,10 +33,13 @@ public final class OS {
 
 	// Totally not inspired by java.util.concurrent.TimeUnit
 	/**
-	 * Enumeration to support representation and conversion between different Memory
-	 * Units such as Bytes, Kilobytes, Megabytes, etc. <br />
+	 * Convenience class for dealing with conversions to and from different units of
+	 * memory storage. Includes SI Units (Kilobytes, Megabytes, Gigabytes) and non-SI
+	 * Units (Kibibytes, Mebibytes, Gibibytes) assisted by the common base unit they
+	 * share, the Byte. <br />
 	 * <br />
-	 * Current this does not support Non-SI Units (KiB, MiB, GiB)
+	 * Currently this class only deals with 64-bit Integer Values (Although 32-bit
+	 * Integers can be used).
 	 * 
 	 * @author Matthew
 	 */
@@ -37,13 +56,28 @@ public final class OS {
 			}
 
 			@Override
+			public long toKibibytes(long amt) {
+				return amt / C_KiB;
+			}
+
+			@Override
 			public long toMegabytes(long amt) {
 				return amt / C_MB;
 			}
 
 			@Override
+			public long toMebibytes(long amt) {
+				return amt / C_MiB;
+			}
+
+			@Override
 			public long toGigabytes(long amt) {
 				return amt / C_GB;
+			}
+
+			@Override
+			public long toGibibytes(long amt) {
+				return amt / C_GiB;
 			}
 
 			@Override
@@ -63,8 +97,18 @@ public final class OS {
 			}
 
 			@Override
+			public long toKibibytes(long amt) {
+				return (amt * C_KB) / C_KiB;
+			}
+
+			@Override
 			public long toMegabytes(long amt) {
 				return amt / C_KB;
+			}
+
+			@Override
+			public long toMebibytes(long amt) {
+				return (amt * C_KB) / C_MiB;
 			}
 
 			@Override
@@ -73,8 +117,54 @@ public final class OS {
 			}
 
 			@Override
+			public long toGibibytes(long amt) {
+				return (amt * C_KB) / C_GiB;
+			}
+
+			@Override
 			public long convert(long amt, MemoryUnit source) {
 				return source.toKilobytes(amt);
+			}
+		},
+		KIBIBYTES("KiB") {
+			@Override
+			public long toBytes(long amt) {
+				return amt * C_KiB;
+			}
+
+			@Override
+			public long toKilobytes(long amt) {
+				return (amt * C_KiB) / C_KB;
+			}
+
+			@Override
+			public long toKibibytes(long amt) {
+				return amt;
+			}
+
+			@Override
+			public long toMegabytes(long amt) {
+				return (amt * C_KiB) / C_MB;
+			}
+
+			@Override
+			public long toMebibytes(long amt) {
+				return amt / C_KiB;
+			}
+
+			@Override
+			public long toGigabytes(long amt) {
+				return (amt * C_KiB) / C_GB;
+			}
+
+			@Override
+			public long toGibibytes(long amt) {
+				return amt / C_MiB;
+			}
+
+			@Override
+			public long convert(long amt, MemoryUnit source) {
+				return source.toKibibytes(amt);
 			}
 		},
 		MEGABYTES("MB") {
@@ -89,8 +179,18 @@ public final class OS {
 			}
 
 			@Override
+			public long toKibibytes(long amt) {
+				return (amt * C_MB) / C_KiB;
+			}
+
+			@Override
 			public long toMegabytes(long amt) {
 				return amt;
+			}
+
+			@Override
+			public long toMebibytes(long amt) {
+				return (amt * C_MB) / C_MiB;
 			}
 
 			@Override
@@ -99,8 +199,54 @@ public final class OS {
 			}
 
 			@Override
+			public long toGibibytes(long amt) {
+				return (amt * C_MB) / C_GiB;
+			}
+
+			@Override
 			public long convert(long amt, MemoryUnit source) {
 				return source.toMegabytes(amt);
+			}
+		},
+		MEBIBYTES("MiB") {
+			@Override
+			public long toBytes(long amt) {
+				return amt * C_MiB;
+			}
+
+			@Override
+			public long toKilobytes(long amt) {
+				return (amt * C_MiB) / C_KB;
+			}
+
+			@Override
+			public long toKibibytes(long amt) {
+				return amt * C_KiB;
+			}
+
+			@Override
+			public long toMegabytes(long amt) {
+				return (amt * C_MiB) / C_MB;
+			}
+
+			@Override
+			public long toMebibytes(long amt) {
+				return amt;
+			}
+
+			@Override
+			public long toGigabytes(long amt) {
+				return (amt * C_MiB) / C_GB;
+			}
+
+			@Override
+			public long toGibibytes(long amt) {
+				return amt / C_KiB;
+			}
+
+			@Override
+			public long convert(long amt, MemoryUnit source) {
+				return source.toMebibytes(amt);
 			}
 		},
 		GIGABYTES("GB") {
@@ -115,8 +261,18 @@ public final class OS {
 			}
 
 			@Override
+			public long toKibibytes(long amt) {
+				return (amt * C_GB) / C_KiB;
+			}
+
+			@Override
 			public long toMegabytes(long amt) {
 				return amt * C_KB;
+			}
+
+			@Override
+			public long toMebibytes(long amt) {
+				return (amt * C_GB) / C_MiB;
 			}
 
 			@Override
@@ -125,15 +281,66 @@ public final class OS {
 			}
 
 			@Override
+			public long toGibibytes(long amt) {
+				return (amt * C_GB) / C_GiB;
+			}
+
+			@Override
 			public long convert(long amt, MemoryUnit source) {
 				return source.toGigabytes(amt);
 			}
+		},
+		GIBIBYTES("GiB") {
+			@Override
+			public long toBytes(long amt) {
+				return amt * C_GiB;
+			}
+
+			@Override
+			public long toKilobytes(long amt) {
+				return (amt * C_GiB) / C_KB;
+			}
+
+			@Override
+			public long toKibibytes(long amt) {
+				return amt * C_MiB;
+			}
+
+			@Override
+			public long toMegabytes(long amt) {
+				return (amt * C_GiB) / C_MB;
+			}
+
+			@Override
+			public long toMebibytes(long amt) {
+				return amt * C_KiB;
+			}
+
+			@Override
+			public long toGigabytes(long amt) {
+				return (amt * C_GiB) / C_GB;
+			}
+
+			@Override
+			public long toGibibytes(long amt) {
+				return amt;
+			}
+
+			@Override
+			public long convert(long amt, MemoryUnit source) {
+				return source.toGibibytes(amt);
+			}
 		};
 
-		// TODO Include Non-SI Units like KiB, MiB, GiB.
+		// SI Unit Memory Size Constants
 		static final long C_KB = 1_000;
-		static final long C_MB = 1_000_000;
-		static final long C_GB = 1_000_000_000;
+		static final long C_MB = C_KB * 1_000;
+		static final long C_GB = C_MB * 1_000;
+
+		// Non-SI Unit Memory Size Constants
+		static final long C_KiB = 1_024;
+		static final long C_MiB = C_KiB * 1_024;
+		static final long C_GiB = C_MiB * 1_024;
 
 		private final String tag;
 
@@ -141,26 +348,93 @@ public final class OS {
 			this.tag = tag;
 		}
 
+		/**
+		 * Convert to Bytes
+		 * 
+		 * @param amt
+		 * @return
+		 */
 		public long toBytes(long amt) {
 			throw new AbstractMethodError();
 		}
 
+		/**
+		 * Convert to Kilobytes (1000 Bytes or 10^3 Bytes)
+		 * 
+		 * @param amt
+		 * @return
+		 */
 		public long toKilobytes(long amt) {
 			throw new AbstractMethodError();
 		}
 
+		/**
+		 * Convert to Kibibytes (1024 Bytes or 2^10 Bytes)
+		 * 
+		 * @param amt
+		 * @return
+		 */
+		public long toKibibytes(long amt) {
+			throw new AbstractMethodError();
+		}
+
+		/**
+		 * Convert to Megabytes (1000 Kilobytes or 10^6 Bytes)
+		 * 
+		 * @param amt
+		 * @return
+		 */
 		public long toMegabytes(long amt) {
 			throw new AbstractMethodError();
 		}
 
+		/**
+		 * Convert to Mebibytes (1024 Kibibytes or 2^20 Bytes)
+		 * 
+		 * @param amt
+		 * @return
+		 */
+		public long toMebibytes(long amt) {
+			throw new AbstractMethodError();
+		}
+
+		/**
+		 * Convert to Gigabytes (1000 Megabytes or 10^9 Bytes)
+		 * 
+		 * @param amt
+		 * @return
+		 */
 		public long toGigabytes(long amt) {
 			throw new AbstractMethodError();
 		}
 
+		/**
+		 * Convert to Gibibytes (1024 Mebibytes or 2^30 Bytes)
+		 * 
+		 * @param amt
+		 * @return
+		 */
+		public long toGibibytes(long amt) {
+			throw new AbstractMethodError();
+		}
+
+		/**
+		 * Convert source unit to this unit.
+		 * 
+		 * @param amt
+		 * @param source
+		 * @return
+		 */
 		public long convert(long amt, MemoryUnit source) {
 			throw new AbstractMethodError();
 		}
 
+		/**
+		 * The appropriate tag for the Unit of Memory Storage, e.g., MB, MiB, GiB,
+		 * GB, etc.
+		 * 
+		 * @return
+		 */
 		public String getTag() {
 			return this.tag;
 		}
@@ -171,12 +445,6 @@ public final class OS {
 		}
 	}
 
-	/**
-	 * Represents a very simplified categorization of 32 Bit and 64 bit
-	 * architectures.
-	 * 
-	 * @author Matthew
-	 */
 	public enum Bit {
 		BIT_32("x86", "32-bit", 32), BIT_64("x64", "64-bit", 64);
 
@@ -212,7 +480,6 @@ public final class OS {
 	public static final OS UNIX = new OS("", new String[] { "lin", "linux", "nux" });
 	public static final OS UNSUPPORTED = new OS("", new String[] {});
 
-	// Why? Because.
 	private static final Map<OS, String> nameLookup = Maps.newHashMap();
 
 	private static final Runtime rt = Runtime.getRuntime();

@@ -351,6 +351,29 @@ public class Autotyper {
 
 	private static void killSystemStreams() {
 		// Ignore JNativeHook's Constant Output
+		System.setOut(new PrintStream(System.out) {
+			@Override
+			public void print(String s) {
+				if (s.equalsIgnoreCase("yo")) {
+					final StackTraceElement[] elements = Thread.currentThread().getStackTrace();
+					for (final StackTraceElement ste : elements) {
+						System.out.println(ste);
+					}
+				} else {
+					super.print(s);
+				}
+			}
+
+			// Correct for RTextAreaBase Printing "Yo"
+			@Override
+			public void println(String s) {
+				if (s.equalsIgnoreCase("yo"))
+					return;
+				else {
+					super.println(s);
+				}
+			}
+		});
 		System.setErr(new PrintStream(NULL_STREAM));
 	}
 

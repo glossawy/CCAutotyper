@@ -21,7 +21,7 @@ public enum LocationHandler {
 		public InformedOutcome canHandle(String text) {
 			final File f = new File(text);
 			final String reason = String.format("File not found at '%s'!", text);
-
+			
 			if (f.exists())
 				return InformedOutcome.createSuccess();
 			else
@@ -42,10 +42,20 @@ public enum LocationHandler {
 		@Override
 		public InformedOutcome canHandle(String text) {
 			try {
-				new java.net.URL(text);
-				return InformedOutcome.createSuccess();
+				java.net.URL url = new java.net.URL(text);
+				HttpURLConnection con = (HttpURLConnection) url.openConnection();
+				con.setRequestMethod("HEAD");
+				
+				final int response = con.getResponseCode();
+				
+				if(response == 200) {
+					return InformedOutcome.createSuccess();
+				} else
+					throw new IOException("Web Response was not 200 (Success). It was " + response + "!");
 			} catch (final MalformedURLException e) {
 				return new InformedOutcome(this, text + " is an invalid URL!", false, e);
+			} catch (final IOException e) {
+				return new InformedOutcome(this, "Connection Failure: " + text, false, e);
 			}
 		}
 	},

@@ -9,6 +9,8 @@ package com.mattc.autotyper;
  */
 public class Strings {
 
+	public static final String GITHUB_URL = "https://github.com/Matt529/CCAutotyper/blob/master/README.md";
+
 	public static final String FLAG_GUI = "gui";
 	public static final String FLAG_FILE = "file";
 	public static final String FLAG_URL = "url";
@@ -28,5 +30,7 @@ public class Strings {
 	public static final String PREFS_GUI_INPUTDELAY = "input_delay";
 	public static final String PREFS_GUI_MEMORY = "locations_";
 	public static final String PREFS_GUI_SELECTED = "selected_radio";
+
+	public static final String PREFS_GUI_CONFIRM = "do_confirm_file";
 
 }

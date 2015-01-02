@@ -2,6 +2,7 @@ package com.mattc.autotyper.gui;
 
 import java.awt.Color;
 import java.awt.Container;
+import java.awt.Desktop;
 import java.awt.EventQueue;
 import java.awt.FlowLayout;
 import java.awt.Font;
@@ -11,11 +12,16 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.FocusEvent;
 import java.awt.event.FocusListener;
+import java.awt.event.ItemEvent;
+import java.awt.event.ItemListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.io.File;
 import java.io.IOException;
+import java.net.URISyntaxException;
 import java.net.URL;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.prefs.Preferences;
@@ -32,9 +38,17 @@ import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JRadioButton;
 import javax.swing.JTextField;
+import javax.swing.JToggleButton;
 import javax.swing.SwingConstants;
 import javax.swing.WindowConstants;
 import javax.swing.text.JTextComponent;
+
+import org.fife.ui.autocomplete.AutoCompletion;
+import org.fife.ui.autocomplete.BasicCompletion;
+import org.fife.ui.autocomplete.Completion;
+import org.fife.ui.autocomplete.CompletionProvider;
+import org.fife.ui.autocomplete.DefaultCompletionProvider;
+import org.fife.ui.rtextarea.RTextArea;
 
 import com.google.common.collect.Lists;
 import com.mattc.autotyper.Autotyper;
@@ -44,7 +58,6 @@ import com.mattc.autotyper.Strings;
 import com.mattc.autotyper.util.Console;
 import com.mattc.autotyper.util.IOUtils;
 
-// TODO Past Location Memory and Auto-Completion
 public class AutotyperWindow extends JFrame {
 
 	private static final long serialVersionUID = -776172984918939880L;
@@ -54,8 +67,10 @@ public class AutotyperWindow extends JFrame {
 	private final Keyboard keys;
 	private final Preferences prefs;
 	private final Timer timer = new Timer(true);
-	private final String[] locations = new String[10];
+	private final String[] locations = new String[50];
+	private int pointer = 0;
 
+	private boolean doConfirm;
 	private int waitTime, inDelay;
 	private MetaButtonGroup group;
 
@@ -64,7 +79,6 @@ public class AutotyperWindow extends JFrame {
 
 		this.keys = keys;
 		this.prefs = Preferences.userNodeForPackage(AutotyperWindow.class);
-
 		EventQueue.invokeLater(new Runnable() {
 			@Override
 			public void run() {
@@ -74,6 +88,7 @@ public class AutotyperWindow extends JFrame {
 
 				init();
 				initMenuBar();
+				setSize(500, 280);
 				setResizable(false);
 				setLocationRelativeTo(null);
 				setVisible(false);
@@ -86,17 +101,24 @@ public class AutotyperWindow extends JFrame {
 		cont.setLayout(new BoxLayout(cont, BoxLayout.Y_AXIS));
 
 		loadPrefs();
-
 		this.group = new MetaButtonGroup();
+
+		final DefaultCompletionProvider provider = new DefaultCompletionProvider();
+		final AutoCompletion locationCompleter = new AutoCompletion(updateLocationCompletionProvider(provider));
+		checkDefaultCompletions(provider);
+
 		final JPanel inputPanel = new JPanel();
 		final JPanel radioPanel = new JPanel();
 		final JLabel wLabel1 = new JLabel("Wait");
 		final JLabel wLabel2 = new JLabel("seconds before typing.");
 		final JLabel iLabel1 = new JLabel("Wait");
 		final JLabel iLabel2 = new JLabel("milliseconds between keystrokes.");
+		final JLabel cLabel1 = new JLabel("I");
+		final JLabel cLabel2 = new JLabel("want to confirm the file.");
 		final JTextField wField = new JTextField(2);
 		final JTextField iField = new JTextField(2);
-		final JTextField lField = new JTextField(50);
+		final RTextArea lField = new RTextArea(1, 50);
+		final JToggleButton cButton = new JToggleButton(this.doConfirm ? "do" : "do not");
 		final JRadioButton file = new JRadioButton("Local File");
 		final JRadioButton url = new JRadioButton("Website File");
 		final JRadioButton paste = new JRadioButton("Pastebin Code");
@@ -105,6 +127,7 @@ public class AutotyperWindow extends JFrame {
 
 		radioPanel.setLayout(new FlowLayout(FlowLayout.LEFT, 10, 0));
 
+		cButton.setSelected(this.doConfirm);
 		wField.setDocument(new TextLimitDocument(2));
 		iField.setDocument(new TextLimitDocument(2));
 		wField.setText(Integer.toString(this.waitTime / 1000));
@@ -112,15 +135,21 @@ public class AutotyperWindow extends JFrame {
 		wField.setHorizontalAlignment(SwingConstants.CENTER);
 		iField.setHorizontalAlignment(SwingConstants.CENTER);
 		lField.setMargin(new Insets(0, 5, 0, 5));
+		lField.setHighlightCurrentLine(false);
+		locationCompleter.install(lField);
 
 		final JPanel s1 = new JPanel();
 		final JPanel s2 = new JPanel();
+		final JPanel s3 = new JPanel();
 		s1.add(wLabel1);
 		s1.add(wField);
 		s1.add(wLabel2);
 		s2.add(iLabel1);
 		s2.add(iField);
 		s2.add(iLabel2);
+		s3.add(cLabel1);
+		s3.add(cButton);
+		s3.add(cLabel2);
 
 		this.group.add(auto, Strings.GHOST_TEXT_ASELECT);
 		this.group.add(url, Strings.GHOST_TEXT_USELECT);
@@ -144,7 +173,13 @@ public class AutotyperWindow extends JFrame {
 
 		cont.add(s1);
 		cont.add(s2);
+		cont.add(s3);
 		cont.add(inputPanel);
+
+		locationCompleter.setAutoCompleteEnabled(true);
+		locationCompleter.setAutoActivationEnabled(true);
+		locationCompleter.setAutoCompleteSingleChoices(false);
+		locationCompleter.setShowDescWindow(false);
 
 		wField.addFocusListener(new FocusListener() {
 
@@ -186,7 +221,7 @@ public class AutotyperWindow extends JFrame {
 
 			@Override
 			public void focusGained(FocusEvent e) {
-				final JTextField field = (JTextField) e.getSource();
+				final RTextArea field = (RTextArea) e.getSource();
 
 				if (isGhostText(field)) {
 					removeGhostText(field);
@@ -195,7 +230,7 @@ public class AutotyperWindow extends JFrame {
 
 			@Override
 			public void focusLost(FocusEvent e) {
-				final JTextField field = (JTextField) e.getSource();
+				final RTextArea field = (RTextArea) e.getSource();
 
 				if (field.getText().trim().isEmpty()) {
 					addGhostText(field, AutotyperWindow.this.group.getMetaStringForSelected());
@@ -242,14 +277,26 @@ public class AutotyperWindow extends JFrame {
 						showError(outcome.reason);
 					} else {
 						final File file = handler.handle(text);
-						final boolean ok = showPrompt("Start Autotyping in " + (AutotyperWindow.this.waitTime / 1000) + " seconds?");
-						if (ok) {
-							setInput(false);
-							this.prevThread = makeExecutionThread(file);
-							this.prevThread.start();
-							toBack();
-						} else
-							return;
+						try {
+							if (AutotyperWindow.this.doConfirm) {
+								final ConfirmFileDialog dialog = new ConfirmFileDialog(AutotyperWindow.this, file);
+								if (!dialog.isApproved()) return;
+							}
+
+							final boolean ok = showPrompt("Start Autotyping in " + (AutotyperWindow.this.waitTime / 1000) + " seconds?");
+							if (ok) {
+								setInput(false);
+								this.prevThread = makeExecutionThread(file);
+								this.prevThread.start();
+								toBack();
+								saveToHistory(text);
+								updateLocationCompletionProvider((DefaultCompletionProvider) locationCompleter.getCompletionProvider());
+							} else
+								return;
+
+						} catch (final IOException e1) {
+							e1.printStackTrace();
+						}
 					}
 				}
 			}
@@ -293,7 +340,14 @@ public class AutotyperWindow extends JFrame {
 			}
 		}, 0, 200);
 
-		setSize(500, 220);
+		cButton.addItemListener(new ItemListener() {
+			@Override
+			public void itemStateChanged(ItemEvent e) {
+				AutotyperWindow.this.doConfirm = e.getStateChange() == ItemEvent.SELECTED;
+
+				cButton.setText(AutotyperWindow.this.doConfirm ? "do" : "do not");
+			}
+		});
 	}
 
 	private void initMenuBar() {
@@ -306,6 +360,17 @@ public class AutotyperWindow extends JFrame {
 
 			about.setIcon(new ImageIcon(icoImg.getScaledInstance(12, 12, Image.SCALE_SMOOTH)));
 			copy.setIcon(new ImageIcon(cpyImg.getScaledInstance(12, 12, Image.SCALE_SMOOTH)));
+
+			about.addMouseListener(new MouseAdapter() {
+				@Override
+				public void mouseClicked(MouseEvent evt) {
+					try {
+						Desktop.getDesktop().browse(new URL(Strings.GITHUB_URL).toURI());
+					} catch (IOException | URISyntaxException e) {
+						Console.exception(e);
+					}
+				}
+			});
 
 			copy.addMouseListener(new MouseAdapter() {
 				@Override
@@ -354,6 +419,7 @@ public class AutotyperWindow extends JFrame {
 		this.prefs.putInt(Strings.PREFS_GUI_WAIT, waitTime);
 		this.prefs.putInt(Strings.PREFS_GUI_INPUTDELAY, delay);
 		this.prefs.putInt(Strings.PREFS_GUI_SELECTED, selected);
+		this.prefs.putBoolean(Strings.PREFS_GUI_CONFIRM, this.doConfirm);
 
 		for (int i = 0; i < locations.length; i++) {
 			this.prefs.put(Strings.PREFS_GUI_MEMORY + i, locations[i] == null ? "null" : locations[i]);
@@ -363,6 +429,7 @@ public class AutotyperWindow extends JFrame {
 	private void loadPrefs() {
 		this.waitTime = this.prefs.getInt(Strings.PREFS_GUI_WAIT, 5000);
 		this.inDelay = this.prefs.getInt(Strings.PREFS_GUI_INPUTDELAY, 40);
+		this.doConfirm = this.prefs.getBoolean(Strings.PREFS_GUI_CONFIRM, true);
 
 		for (int i = 0; i < this.locations.length; i++) {
 			final String s = this.prefs.get(Strings.PREFS_GUI_MEMORY + i, "null");
@@ -371,6 +438,8 @@ public class AutotyperWindow extends JFrame {
 				this.locations[i] = s;
 			}
 		}
+
+		this.pointer = getPointer(this.locations);
 	}
 
 	@Override
@@ -410,7 +479,7 @@ public class AutotyperWindow extends JFrame {
 		return comp.getFont().equals(GHOST_FONT);
 	}
 
-	private static final Font NORMAL_FONT = new Font(Font.MONOSPACED, Font.PLAIN, 12);
+	private static final Font NORMAL_FONT = new Font(Font.MONOSPACED, Font.PLAIN, 14);
 	private static final Font GHOST_FONT = new Font(Font.MONOSPACED, Font.ITALIC, 14);
 
 	private void addGhostText(JTextComponent comp, String text) {
@@ -436,5 +505,68 @@ public class AutotyperWindow extends JFrame {
 
 	private void showMessage(String message) {
 		JOptionPane.showMessageDialog(this, message, "Autotyper Message", JOptionPane.INFORMATION_MESSAGE);
+	}
+
+	private void saveToHistory(String loc) {
+		if (Arrays.asList(this.locations).contains(loc)) return;
+
+		if (this.pointer < this.locations.length) {
+			this.locations[this.pointer++] = loc;
+		} else {
+			for (int i = 1; i < (this.locations.length - 1); i++) {
+				this.locations[i - 1] = this.locations[i];
+			}
+
+			this.locations[this.pointer - 1] = loc;
+		}
+	}
+
+	private int getPointer(Object[] arr) {
+		for (int i = 0; i < arr.length; i++) {
+			if (arr[i] == null) return i;
+		}
+
+		return arr.length;
+	}
+
+	private CompletionProvider updateLocationCompletionProvider(DefaultCompletionProvider provider) {
+		provider.clear();
+
+		for (int i = 0; i < this.locations.length; i++) {
+			if (this.locations[i] == null) {
+				break;
+			}
+
+			provider.addCompletion(new BasicCompletion(provider, this.locations[i]));
+		}
+
+		return provider;
+	}
+
+	private void checkDefaultCompletions(DefaultCompletionProvider provider) {
+		if (this.pointer == 0) {
+			this.locations[0] = "JCR8YTww";
+			this.locations[1] = "6gyLvm4K";
+			this.locations[2] = "nAinUn1h";
+			this.pointer = 3;
+		}
+
+		final List<Completion> bubbles = Lists.newArrayList(provider.getCompletionByInputText("JCR8YTww"));
+		final List<Completion> milkshake = Lists.newArrayList(provider.getCompletionByInputText("6gyLvm4K"));
+		final List<Completion> calc = Lists.newArrayList(provider.getCompletionByInputText("nAinUn1h"));
+
+		if (bubbles.size() != 0) {
+			provider.removeCompletion(bubbles.get(0));
+			provider.addCompletion(new BasicCompletion(provider, "JCR8YTww", "Bubbles! -- KingofGamesYami"));
+		}
+		if (milkshake.size() != 0) {
+			provider.removeCompletion(milkshake.get(0));
+			provider.addCompletion(new BasicCompletion(provider, this.locations[1], "Milkshake GUI -- lednerg"));
+		}
+		if (calc.size() != 0) {
+			provider.removeCompletion(calc.get(0));
+			provider.addCompletion(new BasicCompletion(provider, this.locations[2], "Advanced Calculator -- Cranium"));
+		}
+
 	}
 }
