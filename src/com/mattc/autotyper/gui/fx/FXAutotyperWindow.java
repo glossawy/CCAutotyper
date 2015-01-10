@@ -8,9 +8,11 @@ import java.io.IOException;
 import java.util.prefs.Preferences;
 
 import javafx.application.Application;
+import javafx.application.Platform;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
 import javafx.collections.FXCollections;
+import javafx.concurrent.Task;
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
 import javafx.geometry.Insets;
@@ -120,7 +122,7 @@ public class FXAutotyperWindow extends Application {
 
 		final TextField locField = new AutoCompleteTextField(FXCollections.observableArrayList(this.locations));
 		final InteractiveBox wBox = new InteractiveBox("Wait %t seconds before typing.", Pos.CENTER);
-		final InteractiveBox iBox = new InteractiveBox("Wait %at milliseconds between keystrokes.", Pos.CENTER);
+		final InteractiveBox iBox = new InteractiveBox("Wait %t milliseconds between keystrokes.", Pos.CENTER);
 		final InteractiveBox cBox = new InteractiveBox("I %B want to confirm before typing.", Pos.CENTER);
 		final TextField wField = wBox.getInteractiveChild(0, TextField.class);
 		final TextField iField = iBox.getInteractiveChild(0, TextField.class);
@@ -177,9 +179,17 @@ public class FXAutotyperWindow extends Application {
 			}
 		});
 
+		cBtn.selectedProperty().addListener(new ChangeListener<Boolean>() {
+			@Override
+			public void changed(ObservableValue<? extends Boolean> observable, Boolean oldValue, Boolean newValue) {
+				FXAutotyperWindow.this.doConfirm = newValue.booleanValue();
+			}
+		});
+
 		startBtn.setOnAction(new EventHandler<ActionEvent>() {
 
-			private Thread prevThread;
+			// private Thread prevThread;
+			private Task<Boolean> prevTask;
 
 			@Override
 			public void handle(ActionEvent event) {
@@ -188,7 +198,7 @@ public class FXAutotyperWindow extends Application {
 				if (text.length() == 0) {
 					showError("Some Text Must be Entered!");
 					return;
-				} else if ((this.prevThread != null) && this.prevThread.isAlive()) {
+				} else if ((this.prevTask != null) && this.prevTask.isRunning()) {
 					showError("Cannot run two simultaneous jobs! Please wait for the other to terminate...");
 					return;
 				} else {
@@ -228,9 +238,13 @@ public class FXAutotyperWindow extends Application {
 								@Override
 								public void handle(ActionEvent event) {
 									((Node) event.getSource()).getScene().getWindow().hide();
-									setInput(false);
-									prevThread = makeExecutionThread(file);
-									prevThread.start();
+									setInputDisabled(true);
+									// prevThread = makeExecutionThread(file);
+									// prevThread.setDaemon(true);
+									// prevThread.start();
+									// TODO Make Asynchronous
+									prevTask = makeExecutionTask(file);
+									Platform.runLater(prevTask);
 									primaryStage.toBack();
 									saveToHistory(text);
 									((AutoCompleteTextField) locField).addData(text);
@@ -244,6 +258,29 @@ public class FXAutotyperWindow extends Application {
 
 			}
 
+			private Task<Boolean> makeExecutionTask(final File file) {
+				return new Task<Boolean>() {
+					@Override
+					protected Boolean call() throws Exception {
+						try {
+							FXAutotyperWindow.this.keys.setInputDelay(FXAutotyperWindow.this.inDelay);
+							IOUtils.sleep(FXAutotyperWindow.this.waitTime);
+							FXAutotyperWindow.this.keys.typeFile(file);
+							setInputDisabled(false);
+							showMessage("Finished typing " + locField.getText() + "!");
+							return true;
+						} catch (final IOException ex) {
+							Console.exception(ex);
+							showError("Failure to Autotype, Exception of type " + ex.getClass() + " occurred...");
+						}
+
+						return false;
+					}
+				};
+			}
+
+			//TODO
+			@SuppressWarnings("unused")
 			private Thread makeExecutionThread(final File file) {
 				return new Thread(new Runnable() {
 					@Override
@@ -252,20 +289,20 @@ public class FXAutotyperWindow extends Application {
 							FXAutotyperWindow.this.keys.setInputDelay(FXAutotyperWindow.this.inDelay);
 							IOUtils.sleep(FXAutotyperWindow.this.waitTime);
 							FXAutotyperWindow.this.keys.typeFile(file);
-							setInput(true);
-							showMessage("Finished typing " + locField.getText() + "!");
-						} catch (final IOException ex) {
-							Console.exception(ex);
-							showError("Failure to Autotype, Exception of type " + ex.getClass() + " occurred...");
+							setInputDisabled(false);
+							showMessage("Finished typing " + file.getName() + "!");
+						} catch (final IOException e) {
+							Console.exception(e);
 						}
 					}
 				}, "Typer");
 			}
 
-			private void setInput(boolean state) {
-				locField.setDisable(!state);
-				wField.setDisable(!state);
-				iField.setDisable(!state);
+			private void setInputDisabled(boolean state) {
+				locField.setDisable(state);
+				wField.setDisable(state);
+				iField.setDisable(state);
+				cBtn.setDisable(state);
 			}
 
 		});
@@ -449,6 +486,7 @@ public class FXAutotyperWindow extends Application {
 		} else {
 			this.keys = new SwingKeyboard(this.inDelay);
 		}
+		// this.keys = new SwingKeyboard(this.inDelay);
 	}
 
 	private boolean isValid(String input) {

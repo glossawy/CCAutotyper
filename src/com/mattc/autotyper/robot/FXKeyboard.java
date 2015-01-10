@@ -91,7 +91,7 @@ public class FXKeyboard implements Keyboard {
 	private volatile boolean alt = false;
 	private volatile boolean bspace = false;
 	private volatile boolean keypressed = false;
-	
+
 	public FXKeyboard(int delay) {
 		this.delay = delay;
 		this.robo = Application.GetApplication().createRobot();
@@ -433,35 +433,36 @@ public class FXKeyboard implements Keyboard {
 
 		boolean block = false;
 		outer:
-		for (final String l : lines) {
-			// Ignore Empty Lines and Comments
-			if (l.length() == 0) {
-				continue;
-			} else if (l.startsWith("--[[")) {
-				block = true;
-				continue;
-			} else if (block && (l.endsWith("]]") || l.endsWith("]]--"))) {
-				block = false;
-				continue;
-			} else if (l.startsWith("--")) {
-				continue;
-			}
-
-			// Basically a copy of type(String) but this gives us more control
-			// to pause and stop on a per character basis, not a per line basis.
-			final char[] characters = l.trim().toCharArray();
-			for (final char c : characters) {
-				while ((this.mode == KeyboardMode.PAUSED) || this.alt) {
-					IOUtils.sleep(200);
-				}
-				if (this.mode == KeyboardMode.INACTIVE) {
-					break outer;
+			for (final String l : lines) {
+				// Ignore Empty Lines and Comments
+				if (l.length() == 0) {
+					continue;
+				} else if (l.startsWith("--[[")) {
+					block = true;
+					continue;
+				} else if (block && (l.endsWith("]]") || l.endsWith("]]--"))) {
+					block = false;
+					continue;
+				} else if (l.startsWith("--")) {
+					continue;
 				}
 
-				type(c);
+				// Basically a copy of type(String) but this gives us more control
+				// to pause and stop on a per character basis, not a per line basis.
+				final char[] characters = l.trim().toCharArray();
+				for (final char c : characters) {
+					while ((this.mode == KeyboardMode.PAUSED) || this.alt) {
+						IOUtils.sleep(200);
+					}
+					if (this.mode == KeyboardMode.INACTIVE) {
+						break outer;
+					}
+					type(c);
+				}
+
+			System.out.println("End");
+				doType(VK_ENTER);
 			}
-			doType(VK_ENTER);
-		}
 
 		Console.debug("FINISHED");
 		this.mode = KeyboardMode.INACTIVE;
@@ -555,8 +556,9 @@ public class FXKeyboard implements Keyboard {
 			this.alt = true;
 		} else if (this.alt && (e.getKeyCode() == NativeKeyEvent.VC_BACKSPACE)) {
 			this.bspace = true;
-		} else if (this.alt)
+		} else if (this.alt) {
 			this.keypressed = true;
+		}
 	}
 
 	@Override

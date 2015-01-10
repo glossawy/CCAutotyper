@@ -465,35 +465,35 @@ public class SwingKeyboard implements Keyboard {
 
 		boolean block = false;
 		outer:
-		for (final String l : lines) {
-			// Ignore Empty Lines and Comments
-			if (l.length() == 0) {
-				continue;
-			} else if (l.startsWith("--[[")) {
-				block = true;
-				continue;
-			} else if (block && (l.endsWith("]]") || l.endsWith("]]--"))) {
-				block = false;
-				continue;
-			} else if (l.startsWith("--")) {
-				continue;
-			}
-
-			// Basically a copy of type(String) but this gives us more control
-			// to pause and stop on a per character basis, not a per line basis.
-			final char[] characters = l.trim().toCharArray();
-			for (final char c : characters) {
-				while ((this.mode == KeyboardMode.PAUSED) || this.alt) {
-					IOUtils.sleep(200);
-				}
-				if (this.mode == KeyboardMode.INACTIVE) {
-					break outer;
+			for (final String l : lines) {
+				// Ignore Empty Lines and Comments
+				if (l.length() == 0) {
+					continue;
+				} else if (l.startsWith("--[[")) {
+					block = true;
+					continue;
+				} else if (block && (l.endsWith("]]") || l.endsWith("]]--"))) {
+					block = false;
+					continue;
+				} else if (l.startsWith("--")) {
+					continue;
 				}
 
-				type(c);
+				// Basically a copy of type(String) but this gives us more control
+				// to pause and stop on a per character basis, not a per line basis.
+				final char[] characters = l.trim().toCharArray();
+				for (final char c : characters) {
+					while ((this.mode == KeyboardMode.PAUSED) || this.alt) {
+						IOUtils.sleep(200);
+					}
+					if (this.mode == KeyboardMode.INACTIVE) {
+						break outer;
+					}
+
+					type(c);
+				}
+				doType(VK_ENTER);
 			}
-			doType(VK_ENTER);
-		}
 
 		Console.debug("FINISHED");
 		this.mode = KeyboardMode.INACTIVE;
@@ -627,7 +627,7 @@ public class SwingKeyboard implements Keyboard {
 			// Delete the 1 or 2 stray characters
 			// Alt + P will print P in computer craft, this deletes the P
 			// if the user did not.
-			if (!this.bspace && keypressed) {
+			if (!this.bspace && this.keypressed) {
 				doType(KeyEvent.VK_BACK_SPACE);
 			} else {
 				this.bspace = false;
@@ -644,9 +644,10 @@ public class SwingKeyboard implements Keyboard {
 			this.alt = true;
 		} else if (this.alt && (e.getKeyCode() == NativeKeyEvent.VC_BACKSPACE)) {
 			this.bspace = true;
-		} else if (this.alt)
+		} else if (this.alt) {
 			this.keypressed = true;
-			
+		}
+
 	}
 
 	@Override
