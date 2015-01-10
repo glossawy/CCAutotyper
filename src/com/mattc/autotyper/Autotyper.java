@@ -111,11 +111,11 @@ public class Autotyper {
 				// 6gyLvm4K -- Milkshake GUI (Lots of Long Code)
 				// nAinUn1h -- Advanced Calculator (Lots of Complex Tables)
 				keys.typeFile(f);
-				System.exit(0);
 			} catch (IOException | InterruptedException e) {
 				Console.exception(e);
 			} finally {
 				keys.destroy();
+				System.exit(0);
 			}
 		}
 	}

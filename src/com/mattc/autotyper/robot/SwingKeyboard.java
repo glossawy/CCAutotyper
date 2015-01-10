@@ -585,6 +585,7 @@ public class SwingKeyboard implements Keyboard {
 	}
 
 	private volatile boolean alt = false;
+	private volatile boolean keypressed = false;
 	private volatile boolean bspace = false;
 
 	@Override
@@ -626,7 +627,7 @@ public class SwingKeyboard implements Keyboard {
 			// Delete the 1 or 2 stray characters
 			// Alt + P will print P in computer craft, this deletes the P
 			// if the user did not.
-			if (!this.bspace) {
+			if (!this.bspace && keypressed) {
 				doType(KeyEvent.VK_BACK_SPACE);
 			} else {
 				this.bspace = false;
@@ -643,7 +644,9 @@ public class SwingKeyboard implements Keyboard {
 			this.alt = true;
 		} else if (this.alt && (e.getKeyCode() == NativeKeyEvent.VC_BACKSPACE)) {
 			this.bspace = true;
-		}
+		} else if (this.alt)
+			this.keypressed = true;
+			
 	}
 
 	@Override

@@ -90,7 +90,8 @@ public class FXKeyboard implements Keyboard {
 	private volatile KeyboardMode mode = KeyboardMode.INACTIVE;
 	private volatile boolean alt = false;
 	private volatile boolean bspace = false;
-
+	private volatile boolean keypressed = false;
+	
 	public FXKeyboard(int delay) {
 		this.delay = delay;
 		this.robo = Application.GetApplication().createRobot();
@@ -537,7 +538,7 @@ public class FXKeyboard implements Keyboard {
 			// Delete the 1 or 2 stray characters
 			// Alt + P will print P in computer craft, this deletes the P
 			// if the user did not.
-			if (!this.bspace) {
+			if (!this.bspace && this.keypressed) {
 				doType(KeyEvent.VK_BACK_SPACE);
 			} else {
 				this.bspace = false;
@@ -554,7 +555,8 @@ public class FXKeyboard implements Keyboard {
 			this.alt = true;
 		} else if (this.alt && (e.getKeyCode() == NativeKeyEvent.VC_BACKSPACE)) {
 			this.bspace = true;
-		}
+		} else if (this.alt)
+			this.keypressed = true;
 	}
 
 	@Override
