@@ -2,6 +2,25 @@ CCAutotyper [![Build Status](https://travis-ci.org/Matt529/CCAutotyper.svg)](htt
 ===========
 An Autotyper for ComputerCraft players who use servers that have HTTP Disabled!
 
+###v2.0a Patch
+---
+####**[Notes]**
+- Resolves Issue #3, Fixes Fatal UI Thread Bug
+- Moves Autotyping on to the main UI Thread. The GUI will be unresponsive during autotyping.
+ * Not a huge deal, Input was blocked anyway when it was run off of the UI thread before.
+- Now released with JRE 1.8.0 update 20. Update 25 broke Auto-Completion due to a JavaFX change.
+ * Will be resolved in a future update.
+- The Do/Do Not Button actually does things now.
+ 
+####**[Internal]**
+- FXKeyboard now executes on the main JavaFX Application Thread instead of on a background thread. This should be resolved later.
+ * This will make the GUI unresponsive but that is not a huge change since setInputDisabled is called before execution anyway.
+- Keyboard now executed as a JavaFX Concurrent Task so it can be checked for completion.
+- Bundling JRE 1.8.0 update 20 since a bug in the latest version of JFX caused automatic completion (unexpectedly) due to a change in how the scene
+graph synchronization works. This should be fixed in a later version to fit in this new framework. [TODO]
+- the Do/Do Not Button (referred to as cBtn) now has a selectedProperty ChangeListener that actually affects doConfirm now.
+- setInput changed to setInputDisabled for FXAutotyperWindow
+ 
 ###v1.2b to v2.0a
 ---
 ####**[Primary]**
@@ -24,6 +43,7 @@ An Autotyper for ComputerCraft players who use servers that have HTTP Disabled!
  * @FXCompatible -- Indicates that an object can be intertwined with JavaFX code (JavaFX Application Thread compatible)
  * @Indev(since, lastUpdate, author) -- Indicates an object actively in development and that may be unstable/changing
 - Resource Management via Strings.Resources using Strings.Resources.Resource
+- Many Changes, Please See Complete Commit Log
 - Splines Reticulated
 
 ---
