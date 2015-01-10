@@ -8,7 +8,9 @@ import javax.swing.ButtonGroup;
 import javax.swing.ButtonModel;
 
 import com.google.common.collect.Maps;
+import com.mattc.autotyper.meta.SwingCompatible;
 
+// TODO Rewrite and Deprecate. Delegate this role to a more effective design.
 /**
  * A ButtonGroup designed to hold arbitrary Metadata on Button's. The data is put and
  * received in a similar way to Properties. In a series of Key-Value Pairs. To ensure
@@ -16,6 +18,7 @@ import com.google.common.collect.Maps;
  * 
  * @author Matthew
  */
+@SwingCompatible
 public class MetaButtonGroup extends ButtonGroup {
 
 	private static final long serialVersionUID = 748697940184112105L;

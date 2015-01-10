@@ -1,4 +1,5 @@
 #!/bin/bash
+
 if type -p java; then
     echo "Using Java Executable found ins System PATH"
     _java=java

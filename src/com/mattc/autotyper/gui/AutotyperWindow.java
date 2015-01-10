@@ -52,19 +52,32 @@ import org.fife.ui.rtextarea.RTextArea;
 
 import com.google.common.collect.Lists;
 import com.mattc.autotyper.Autotyper;
-import com.mattc.autotyper.Keyboard;
+import com.mattc.autotyper.Parameters;
 import com.mattc.autotyper.Ref;
 import com.mattc.autotyper.Strings;
+import com.mattc.autotyper.Strings.Resources;
+import com.mattc.autotyper.Strings.Resources.Resource;
+import com.mattc.autotyper.meta.InformedOutcome;
+import com.mattc.autotyper.robot.SwingKeyboard;
 import com.mattc.autotyper.util.Console;
 import com.mattc.autotyper.util.IOUtils;
 
-public class AutotyperWindow extends JFrame {
+/**
+ * Main Window for a Swing Autotyper GUI <br />
+ * <br />
+ * Handles such things as auto-completion and launching the application. Attempts to
+ * be slick... using Swing...
+ * 
+ * @author Matthew
+ *
+ */
+public class AutotyperWindow extends JFrame implements GuiAccessor {
 
 	private static final long serialVersionUID = -776172984918939880L;
 
 	private static final String RANK = "rank";
 
-	private final Keyboard keys;
+	private final SwingKeyboard keys;
 	private final Preferences prefs;
 	private final Timer timer = new Timer(true);
 	private final String[] locations = new String[50];
@@ -74,11 +87,13 @@ public class AutotyperWindow extends JFrame {
 	private int waitTime, inDelay;
 	private MetaButtonGroup group;
 
-	public AutotyperWindow(Keyboard keys) {
+	public AutotyperWindow() {
 		super(Ref.TITLE + " | " + Ref.VERSION);
 
-		this.keys = keys;
+		// Initialize Preferences and Swing based Keyboard (we know FX won't work
+		this.keys = new SwingKeyboard(Parameters.DEFAULT_DELAY);
 		this.prefs = Preferences.userNodeForPackage(AutotyperWindow.class);
+
 		EventQueue.invokeLater(new Runnable() {
 			@Override
 			public void run() {
@@ -96,6 +111,9 @@ public class AutotyperWindow extends JFrame {
 		});
 	}
 
+	/**
+	 * Create and Layout the various components.
+	 */
 	private void init() {
 		final Container cont = getContentPane();
 		cont.setLayout(new BoxLayout(cont, BoxLayout.Y_AXIS));
@@ -103,10 +121,11 @@ public class AutotyperWindow extends JFrame {
 		loadPrefs();
 		this.group = new MetaButtonGroup();
 
+		// Auto Completion set up
 		final DefaultCompletionProvider provider = new DefaultCompletionProvider();
 		final AutoCompletion locationCompleter = new AutoCompletion(updateLocationCompletionProvider(provider));
-		checkDefaultCompletions(provider);
 
+		// TODO NodeParser Equivalent/InteractiveBox Equivalent
 		final JPanel inputPanel = new JPanel();
 		final JPanel radioPanel = new JPanel();
 		final JLabel wLabel1 = new JLabel("Wait");
@@ -151,6 +170,7 @@ public class AutotyperWindow extends JFrame {
 		s3.add(cButton);
 		s3.add(cLabel2);
 
+		// Initialize Meta Button Properties
 		this.group.add(auto, Strings.GHOST_TEXT_ASELECT);
 		this.group.add(url, Strings.GHOST_TEXT_USELECT);
 		this.group.add(file, Strings.GHOST_TEXT_FSELECT);
@@ -271,20 +291,26 @@ public class AutotyperWindow extends JFrame {
 					} else
 						return;
 
+					Console.debug("Using " + handler.name() + " LocationHandler...");
 					outcome = handler.canHandle(text);
 
 					if (outcome.isFailure()) {
+						Console.debug(outcome);
 						showError(outcome.reason);
 					} else {
 						final File file = handler.handle(text);
 						try {
+
+							// Confirmation Check, Uses Swing
 							if (AutotyperWindow.this.doConfirm) {
 								final ConfirmFileDialog dialog = new ConfirmFileDialog(AutotyperWindow.this, file);
 								if (!dialog.isApproved()) return;
 							}
 
+							// Pre-Typing Prompt
 							final boolean ok = showPrompt("Start Autotyping in " + (AutotyperWindow.this.waitTime / 1000) + " seconds?");
 							if (ok) {
+								// Block Input and Execute Typing on Separate Thread
 								setInput(false);
 								this.prevThread = makeExecutionThread(file);
 								this.prevThread.start();
@@ -301,6 +327,12 @@ public class AutotyperWindow extends JFrame {
 				}
 			}
 
+			/**
+			 * Handles a Singular Autotyping Operation
+			 * 
+			 * @param file
+			 * @return
+			 */
 			private Thread makeExecutionThread(final File file) {
 				return new Thread(new Runnable() {
 					@Override
@@ -316,16 +348,25 @@ public class AutotyperWindow extends JFrame {
 							showError("Failure to Autotype, Exception of type " + ex.getClass() + " occurred...");
 						}
 					}
-				}, "Typer");
+				}, "TYPER");
 			}
 
+			/**
+			 * Enable or Disabled Input Fields
+			 * 
+			 * @param state
+			 */
 			private void setInput(boolean state) {
 				lField.setEnabled(state);
 				wField.setEnabled(state);
 				iField.setEnabled(state);
+				cButton.setEnabled(state);
 			}
 		});
 
+		/*
+		 * Auto Update Ghost Text for Location Field every 200 ms.
+		 */
 		this.timer.scheduleAtFixedRate(new TimerTask() {
 			@Override
 			public void run() {
@@ -340,6 +381,9 @@ public class AutotyperWindow extends JFrame {
 			}
 		}, 0, 200);
 
+		/*
+		 * When clicked, switch between "do" and "don't" confirm.
+		 */
 		cButton.addItemListener(new ItemListener() {
 			@Override
 			public void itemStateChanged(ItemEvent e) {
@@ -350,8 +394,10 @@ public class AutotyperWindow extends JFrame {
 		});
 	}
 
+	// Create and Add Init Menu Bar
 	private void initMenuBar() {
 		try {
+			// Create Pseudo JMenu's that are images and act as buttons
 			final JMenuBar bar = new JMenuBar();
 			final Image icoImg = ImageIO.read(ClassLoader.getSystemClassLoader().getResource("res/about_icon.png"));
 			final Image cpyImg = ImageIO.read(ClassLoader.getSystemClassLoader().getResource("res/copyright_icon.png"));
@@ -390,29 +436,29 @@ public class AutotyperWindow extends JFrame {
 		}
 	}
 
+	/**
+	 * Check for and add Icons if possible. If this fails it may indicate corruption
+	 * or a bad transfer as the images are included in the JAR File.
+	 */
 	private void setIcons() {
-		final ClassLoader loader = ClassLoader.getSystemClassLoader();
-		final Image[] icons = new Image[4];
+		final List<Image> icons = Lists.newArrayList();
 
-		for (int i = 0, size = 16; (i < icons.length) && (size < 256); size += 16) {
-			final String name = "icon" + size + ".png";
+		for (int size = 32; size <= 128; size += 16) {
+			final Resource res = Resources.getImage("icon" + size + ".png");
 
-			final URL url = loader.getResource("res/" + name);
-
-			if (url == null) {
-				continue;
-			} else {
+			if ((res != null) && (res.stream() != null)) {
+				Console.debug("Found icon" + size + ".png");
 				try {
-					Console.debug("Found Icon: " + name);
-					icons[i++] = ImageIO.read(url);
+					icons.add(ImageIO.read(res.stream()));
 				} catch (final IOException e) {
 					Console.exception(e);
 				}
+			} else if ((((size % 32) == 0) || (size == 48)) && (size != 96)) {
+				Console.error("Could not find icon" + size + ".png!");
 			}
 		}
 
-		setIconImages(Lists.newArrayList(icons));
-
+		setIconImages(icons);
 	}
 
 	private void savePrefs(int waitTime, int delay, int selected, String[] locations) {
@@ -442,6 +488,7 @@ public class AutotyperWindow extends JFrame {
 		this.pointer = getPointer(this.locations);
 	}
 
+	// Make sure we execute on the EDT
 	@Override
 	public void setVisible(final boolean visible) {
 		if (!EventQueue.isDispatchThread()) {
@@ -462,6 +509,7 @@ public class AutotyperWindow extends JFrame {
 		savePrefs(this.waitTime, this.inDelay, this.group.getMetaForSelected(RANK, Integer.class), this.locations);
 		super.dispose();
 		this.timer.cancel();
+		this.keys.destroy();
 		Autotyper.exit();
 	}
 
@@ -532,6 +580,13 @@ public class AutotyperWindow extends JFrame {
 	private CompletionProvider updateLocationCompletionProvider(DefaultCompletionProvider provider) {
 		provider.clear();
 
+		if (this.pointer == 0) {
+			this.locations[0] = "JCR8YTww";
+			this.locations[1] = "6gyLvm4K";
+			this.locations[2] = "nAinUn1h";
+			this.pointer = 3;
+		}
+
 		for (int i = 0; i < this.locations.length; i++) {
 			if (this.locations[i] == null) {
 				break;
@@ -540,33 +595,51 @@ public class AutotyperWindow extends JFrame {
 			provider.addCompletion(new BasicCompletion(provider, this.locations[i]));
 		}
 
+		checkDefaultCompletions(provider);
 		return provider;
 	}
 
 	private void checkDefaultCompletions(DefaultCompletionProvider provider) {
-		if (this.pointer == 0) {
-			this.locations[0] = "JCR8YTww";
-			this.locations[1] = "6gyLvm4K";
-			this.locations[2] = "nAinUn1h";
-			this.pointer = 3;
+
+		final List<Completion> bubbles = Lists.newArrayList();
+		final List<Completion> milkshake = Lists.newArrayList();
+		final List<Completion> calc = Lists.newArrayList();
+
+		if (provider.getCompletionByInputText("JCR8YTww") != null) {
+			bubbles.addAll(provider.getCompletionByInputText("JCR8YTww"));
 		}
 
-		final List<Completion> bubbles = Lists.newArrayList(provider.getCompletionByInputText("JCR8YTww"));
-		final List<Completion> milkshake = Lists.newArrayList(provider.getCompletionByInputText("6gyLvm4K"));
-		final List<Completion> calc = Lists.newArrayList(provider.getCompletionByInputText("nAinUn1h"));
+		if (provider.getCompletionByInputText("6gyLvm4K") != null) {
+			milkshake.addAll(provider.getCompletionByInputText("6gyLvm4K"));
+		}
+
+		if (provider.getCompletionByInputText("nAinUn1h") != null) {
+			calc.addAll(provider.getCompletionByInputText("nAinUn1h"));
+		}
 
 		if (bubbles.size() != 0) {
 			provider.removeCompletion(bubbles.get(0));
-			provider.addCompletion(new BasicCompletion(provider, "JCR8YTww", "Bubbles! -- KingofGamesYami"));
+			provider.addCompletion(new BasicCompletion(provider, "JCR8YTww", "Bubbles! by KingofGamesYami"));
 		}
 		if (milkshake.size() != 0) {
 			provider.removeCompletion(milkshake.get(0));
-			provider.addCompletion(new BasicCompletion(provider, this.locations[1], "Milkshake GUI -- lednerg"));
+			provider.addCompletion(new BasicCompletion(provider, this.locations[1], "Milkshake GUI by lednerg"));
 		}
 		if (calc.size() != 0) {
 			provider.removeCompletion(calc.get(0));
-			provider.addCompletion(new BasicCompletion(provider, this.locations[2], "Advanced Calculator -- Cranium"));
+			provider.addCompletion(new BasicCompletion(provider, this.locations[2], "Advanced Calculator by Cranium"));
 		}
 
 	}
+
+	@Override
+	public void doShow() {
+		setVisible(true);
+	}
+
+	@Override
+	public void doHide() {
+		setVisible(false);
+	}
+
 }

@@ -13,13 +13,16 @@ import java.io.OutputStream;
 import java.io.Reader;
 import java.io.StringReader;
 import java.io.Writer;
+import java.net.HttpURLConnection;
 import java.net.URL;
+import java.nio.charset.Charset;
 import java.util.Properties;
 
 import com.google.common.base.Charsets;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Splitter;
 import com.google.common.io.Files;
+import com.mattc.autotyper.gui.SingleStringProcessor;
 import com.mattc.autotyper.util.OS.MemoryUnit;
 
 /**
@@ -485,6 +488,34 @@ public class IOUtils {
 			Thread.sleep(l);
 		} catch (final InterruptedException e) {
 		}
+	}
+
+	public static void printStackTrace(StackTraceElement[] stackTrace) {
+		for (int i = 2; i < stackTrace.length; i++) {
+			Console.warn(stackTrace[i]);
+		}
+	}
+
+	public static String fileToString(File file, Charset charset) throws IOException {
+		return Files.readLines(file, charset, new SingleStringProcessor());
+	}
+
+	public static String fileToString(File file) throws IOException {
+		return fileToString(file, Charset.defaultCharset());
+	}
+
+	public static boolean checkConnectionSuccess(URL url) throws IOException {
+		final HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+		conn.setRequestMethod("HEAD");
+
+		final int responseCode = conn.getResponseCode();
+		conn.disconnect();
+
+		return responseCode == 200;
+	}
+
+	public static boolean checkConnectionSuccess(String url) throws IOException {
+		return checkConnectionSuccess(new URL(url));
 	}
 
 }

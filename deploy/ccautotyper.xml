@@ -3,7 +3,7 @@
   <dontWrapJar>true</dontWrapJar>
   <headerType>gui</headerType>
   <jar>ccautotyper.jar</jar>
-  <outfile>C:\Users\Matthew\Documents\Development\Distributions\CC Autotyper\1.0a\CCAutotyper.exe</outfile>
+  <outfile>C:\Users\Matthew\Documents\Development\Distributions\CC Autotyper\2.0a\CCAutotyper.exe</outfile>
   <errTitle>Java Error -- CCAutotyper</errTitle>
   <cmdLine>gui</cmdLine>
   <chdir>.</chdir>
@@ -13,9 +13,9 @@
   <stayAlive>false</stayAlive>
   <restartOnCrash>false</restartOnCrash>
   <manifest></manifest>
-  <icon>C:\Users\Matthew\Downloads\Fat Bot.ico</icon>
+  <icon>C:\Users\Matthew\Documents\Repositories\CCAutotyper\src\res\fxicon.ico</icon>
   <jre>
-    <path></path>
+    <path>./jre</path>
     <bundledJre64Bit>false</bundledJre64Bit>
     <minVersion>1.7.0</minVersion>
     <maxVersion></maxVersion>

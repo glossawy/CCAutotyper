@@ -7,7 +7,21 @@ import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 
 import com.mattc.autotyper.Downloader;
+import com.mattc.autotyper.meta.ExceptionHandler;
+import com.mattc.autotyper.meta.FXCompatible;
+import com.mattc.autotyper.meta.ImpossibleInputException;
+import com.mattc.autotyper.meta.InformedOutcome;
+import com.mattc.autotyper.meta.SwingCompatible;
 
+/**
+ * Handles downloading and obtaining files from different locations on different
+ * formats. Including Web, Pastebin and URL. Also can Auto-Detect based on a string
+ * using the {@link #canHandle(String) canHandle} method in each LocationHandler.
+ * 
+ * @author Matthew
+ */
+@FXCompatible
+@SwingCompatible
 public enum LocationHandler {
 
 	FILE {
@@ -21,7 +35,7 @@ public enum LocationHandler {
 		public InformedOutcome canHandle(String text) {
 			final File f = new File(text);
 			final String reason = String.format("File not found at '%s'!", text);
-			
+
 			if (f.exists())
 				return InformedOutcome.createSuccess();
 			else
@@ -42,15 +56,16 @@ public enum LocationHandler {
 		@Override
 		public InformedOutcome canHandle(String text) {
 			try {
-				java.net.URL url = new java.net.URL(text);
-				HttpURLConnection con = (HttpURLConnection) url.openConnection();
+				final java.net.URL url = new java.net.URL(text);
+				final HttpURLConnection con = (HttpURLConnection) url.openConnection();
 				con.setRequestMethod("HEAD");
-				
+
 				final int response = con.getResponseCode();
-				
-				if(response == 200) {
+				con.disconnect();
+
+				if (response == 200)
 					return InformedOutcome.createSuccess();
-				} else
+				else
 					throw new IOException("Web Response was not 200 (Success). It was " + response + "!");
 			} catch (final MalformedURLException e) {
 				return new InformedOutcome(this, text + " is an invalid URL!", false, e);
@@ -74,6 +89,7 @@ public enum LocationHandler {
 				con.setRequestMethod("HEAD");
 
 				final int response = con.getResponseCode();
+				con.disconnect();
 
 				if (response == 200)
 					return InformedOutcome.createSuccess();
@@ -87,22 +103,65 @@ public enum LocationHandler {
 		}
 	};
 
+	/**
+	 * Take Location and Obtain File
+	 * 
+	 * @param text
+	 * @return
+	 */
 	public File handle(String text) {
 		throw new AbstractMethodError();
 	}
 
+	/**
+	 * Take Location and determine if it can be handled by this LocationHandler.
+	 * Return an {@link InformedOutcome} object as appropriate.
+	 * 
+	 * @param text
+	 * @return
+	 */
 	public InformedOutcome canHandle(String text) {
 		throw new AbstractMethodError();
 	}
 
-	public static LocationHandler detect(String text) throws Exception {
+	/**
+	 * Auto-Detect the LocationHandler to use by using the {@link #canHandle(String)
+	 * canHandle} method. Exceptions may occur.
+	 * 
+	 * @param text
+	 * @param handler
+	 * @return
+	 * @throws Exception
+	 */
+	public static LocationHandler detect(String text, ExceptionHandler handler) throws Exception {
 		for (final LocationHandler lh : LocationHandler.values()) {
 			final InformedOutcome out = lh.canHandle(text);
 
-			if (out.isSuccess()) return lh;
+			if (out.isSuccess())
+				return lh;
+			else if (out.recommendedException != null) {
+				handler.handle(out.recommendedException);
+			}
 		}
 
-		throw new ImpossibleInputException("The Location '" + text + "' could not be auto-detected!");
+		final Exception e = new ImpossibleInputException("The Location '" + text + "' could not be auto-detected!");
+		handler.handle(e);
+		throw e;
+	}
+
+	/**
+	 * Takes an object and determines the LocationHandler to use using the
+	 * {@link #canHandle(String) canHandle} method. <br />
+	 * this differs from the {@link #detect(String, ExceptionHandler) other} version
+	 * of this method by defaulting to an {@link ExceptionHandler} that just consumes
+	 * Exceptions.
+	 * 
+	 * @param text
+	 * @return
+	 * @throws Exception
+	 */
+	public static LocationHandler detect(String text) throws Exception {
+		return detect(text, ExceptionHandler.NULL_HANDLER);
 	}
 
 }

@@ -1,0 +1,30 @@
+#button-box {
+	-fx-background-color: #1a8190;
+}
+
+#menu-bar {
+	-fx-background-color: #1a8190;
+}
+
+#glass-button {
+	-fx-background-color: #1a8190;
+	-fx-background-radius: 10;
+}
+
+#glass-button:hover {
+	-fx-background-color: linear-gradient(#219eb3, #1a8190, #219eb3);
+	-fx-effect: dropshadow(gaussian, rgba(255, 255, 255, 0.5), 0,0,0,1);
+	-fx-cursor: hand;
+}
+
+#glass-button:pressed {
+	-fx-background-color: linear-gradient(#1a8190, #219eb3, #1a8190);
+	-fx-effect: dropshadow(gaussian, rgba(255, 255, 255, 0.5), 0,0,0,1);
+}
+
+.web-view {
+	-fx-content-display: top left;
+	-fx-border-insets: 2 0 0 0;
+	-fx-border-color: -fx-text-box-border;
+	-fx-border-width: 2;
+}

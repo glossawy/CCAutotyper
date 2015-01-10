@@ -37,6 +37,8 @@ import java.io.OutputStream;
 import java.io.PrintStream;
 import java.util.Arrays;
 
+import javafx.application.Platform;
+
 import javax.swing.JOptionPane;
 import javax.swing.UIManager;
 
@@ -45,6 +47,11 @@ import org.jnativehook.NativeHookException;
 import org.jnativehook.keyboard.NativeKeyListener;
 
 import com.mattc.autotyper.gui.AutotyperWindow;
+import com.mattc.autotyper.gui.GuiAccessor;
+import com.mattc.autotyper.gui.fx.FXAutotyperWindow;
+import com.mattc.autotyper.gui.fx.FXGuiUtils;
+import com.mattc.autotyper.gui.fx.FXOptionPane;
+import com.mattc.autotyper.robot.SwingKeyboard;
 import com.mattc.autotyper.util.Console;
 import com.mattc.autotyper.util.IOUtils;
 import com.mattc.autotyper.util.OS;
@@ -63,20 +70,20 @@ import com.mattc.autotyper.util.OS;
  */
 public class Autotyper {
 
-	private static final int DEFAULT_DELAY = 40;
-
 	private static GlobalScreen global;
 	private static Autotyper __instance;
-	private final Keyboard keyboard;
 
-	private final AutotyperWindow gui;
-	private int waitTime = 10_000;
+	private final GuiAccessor gui;
 
 	public Autotyper() {
-		this.keyboard = new Keyboard(DEFAULT_DELAY);
-		this.gui = new AutotyperWindow(this.keyboard);
+		if (FXGuiUtils.canUseJavaFX()) {
+			Console.debug("Using JavaFX GUI");
+			this.gui = FXAutotyperWindow.getAccessor();
+		} else {
+			Console.debug("Using Swing GUI");
+			this.gui = new AutotyperWindow();
+		}
 
-		global.addNativeKeyListener(this.keyboard);
 	}
 
 	/**
@@ -87,20 +94,28 @@ public class Autotyper {
 	 */
 	public void launch(String[] args) {
 		if (args[0].equalsIgnoreCase(FLAG_GUI)) {
-			printCopyrightStatement(true);
-			this.gui.setVisible(true);
+			this.gui.doShow();
+
+			// We have to terminate an FX GUI
+			if (!(this.gui instanceof AutotyperWindow)) {
+				System.exit(0);
+			}
 		} else {
 			printCopyrightStatement(false);
-			final File f = parseArgs(args);
+			final Parameters params = parseArgs(args);
+			final SwingKeyboard keys = new SwingKeyboard(params.inputDelay);
+			final File f = params.file;
 			try {
-				Thread.sleep(this.waitTime);
+				Thread.sleep(params.waitTime);
 				// JCR8YTww -- Bubbles (Concise, Good Test)
 				// 6gyLvm4K -- Milkshake GUI (Lots of Long Code)
 				// nAinUn1h -- Advanced Calculator (Lots of Complex Tables)
-				this.keyboard.typeFile(f);
+				keys.typeFile(f);
 				System.exit(0);
 			} catch (IOException | InterruptedException e) {
 				Console.exception(e);
+			} finally {
+				keys.destroy();
 			}
 		}
 	}
@@ -112,8 +127,10 @@ public class Autotyper {
 	 * @param args
 	 * @return The File to extract the information from.
 	 */
-	private File parseArgs(String[] args) {
+	private Parameters parseArgs(String[] args) {
+
 		File tmp;
+		int waitTime = 5000, inputDelay = 40;
 
 		Console.info("Received Arguments: " + Arrays.toString(args));
 
@@ -142,17 +159,17 @@ public class Autotyper {
 		for (int i = 2; i < args.length; i++) {
 			switch (args[i]) {
 			case FLAG_WAIT:
-				this.waitTime = Integer.parseInt(args[i + 1]) * 1000;
-				Console.debug("WaitTime set to " + this.waitTime + " milliseconds");
+				waitTime = Integer.parseInt(args[i + 1]) * 1000;
+				Console.debug("WaitTime set to " + waitTime + " milliseconds");
 				break;
 			case FLAG_INPUT_DELAY:
-				this.keyboard.setInputDelay(Integer.parseInt(args[i + 1]));
-				Console.debug("InputDelay set to " + this.keyboard.getInputDelay() + " milliseconds");
+				inputDelay = Integer.parseInt(args[i + 1]);
+				Console.debug("InputDelay set to " + inputDelay + " milliseconds");
 				break;
 			}
 		}
 
-		return tmp;
+		return new Parameters(waitTime, inputDelay, tmp);
 	}
 
 	/**
@@ -198,13 +215,13 @@ public class Autotyper {
 			System.exit(-1);
 		}
 
-		// TODO Ensure that if this fails, the program will still run fine.
 		// Setup Native Libraries to handle Global Key Input
 		try {
 			GlobalScreen.registerNativeHook();
-			global = GlobalScreen.getInstance();
 		} catch (final NativeHookException e) {
 			Console.exception(e);
+		} finally {
+			global = GlobalScreen.getInstance();
 		}
 
 		// If initial setup is ready, print Copyright
@@ -312,7 +329,11 @@ public class Autotyper {
 			}
 
 			if (gui) {
-				JOptionPane.showMessageDialog(null, bos.toString(), "Copyright & Warranty", JOptionPane.INFORMATION_MESSAGE);
+				if (FXGuiUtils.canUseJavaFX() && Platform.isFxApplicationThread()) {
+					FXOptionPane.showMessage("Copyright & Warranty", bos.toString());
+				} else {
+					JOptionPane.showMessageDialog(null, bos.toString(), "Copyright & Warranty", JOptionPane.INFORMATION_MESSAGE);
+				}
 			} else {
 				System.out.println(bos.toString());
 				System.out.println();
@@ -367,6 +388,7 @@ public class Autotyper {
 			// Correct for RTextAreaBase Printing "Yo"
 			@Override
 			public void println(String s) {
+
 				if (s.equalsIgnoreCase("yo"))
 					return;
 				else {

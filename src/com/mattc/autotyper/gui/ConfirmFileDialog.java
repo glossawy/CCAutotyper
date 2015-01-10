@@ -27,9 +27,23 @@ import org.fife.ui.rsyntaxtextarea.SyntaxConstants;
 import org.fife.ui.rtextarea.RTextScrollPane;
 
 import com.google.common.io.Files;
+import com.mattc.autotyper.meta.FXCompatible;
+import com.mattc.autotyper.meta.SwingCompatible;
 import com.mattc.autotyper.util.Console;
 
+/**
+ * Takes in Code or a Code File and displays the text in a TextArea with a
+ * highlighted syntax using RSyntaxTextArea lib. <br />
+ * <br />
+ * Accept or Reject Options with multiple syntaxes.
+ * 
+ * @author Matthew
+ */
+@FXCompatible
+@SwingCompatible
 public class ConfirmFileDialog extends JDialog {
+
+	// TODO make Builder as per FXConfirmDialog
 
 	private static final long serialVersionUID = -5039462697501272483L;
 

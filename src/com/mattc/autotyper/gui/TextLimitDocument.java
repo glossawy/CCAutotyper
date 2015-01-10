@@ -4,12 +4,15 @@ import javax.swing.text.AttributeSet;
 import javax.swing.text.BadLocationException;
 import javax.swing.text.PlainDocument;
 
+import com.mattc.autotyper.meta.SwingCompatible;
+
 /**
  * A Document designed to set a character limit on Text Input Components (e.g.
  * JTextField, JTextArea, etc.) using the JTextComponent.setDocument method.
  * 
  * @author Matthew
  */
+@SwingCompatible
 public class TextLimitDocument extends PlainDocument {
 
 	private static final long serialVersionUID = 2050611792142151267L;

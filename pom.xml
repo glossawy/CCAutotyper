@@ -45,6 +45,13 @@
   		<systemPath>${basedir}/libs/JNativeHook.jar</systemPath>
   	</dependency>
   	<dependency>
+  		<groupId>java-fx</groupId>
+  		<artifactId>javafx</artifactId>
+  		<version>1.7.0_67</version>
+  		<scope>system</scope>
+  		<systemPath>${basedir}/libs/jfxrt.jar</systemPath>
+  	</dependency>
+  	<dependency>
   		<groupId>com.fifesoft</groupId>
   		<artifactId>rsyntaxtextarea</artifactId>
   		<version>2.5.6</version>
