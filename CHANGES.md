@@ -2,6 +2,34 @@ CCAutotyper [![Build Status](https://travis-ci.org/Matt529/CCAutotyper.svg)](htt
 ===========
 An Autotyper for ComputerCraft players who use servers that have HTTP Disabled!
 
+###v2.0a to v2.1.0
+---
+####**[Primary]**
+- New Versioning. MAJOR.MINOR.REVISION instead of MAJOR.MINOR[buildCharacter]
+- Cleaner, likely more expected, way of handling typing tasks. Uses JavaFX Concurrency tools and hides the non-responsive window.
+- New Scheme for Easier Sorting and Identification of Locations, only used for Locations in Location History
+ * New "Web URL:" tag
+ * New "Local File:" tag
+ * New "Pastebin:" tag
+- Auto-Completion Results should no longer return empty lists
+- Now Deploying as a total Java 1.8 Application. Windows Users need not worry since the JRE is bundled for them.
+
+####**[Notable]**
+- Autotyper Window now is hidden while autotyping is occurring.
+- Design for ways of notifying the user via countdown or something similar is underway.
+
+####**[Minor/Internal]**
+- JFXRT removed since Java 8 support for Eclipse should mean it is no longer required (for Luna at least)
+ * Main Development Environment moved to IntelliJ IDEA
+- Input Delay, Wait Time and Current File now stored as JavaFX Properties instead of instance variables
+- New FXAutoTypingTask object that extends JavaFX's Task to more logically be executed "sort of asynchronously" (as in not at all). 
+ * Since the Glass UI Robot must be executed on the Event Thread, we are limited in solutions unless we rollback to the limited AWT Robot
+- LocationHandlers now require a Tag. This is exactly as described above and includes the semicolon at the end. 
+- New Builder.setSize(double, double) method for FXOptionPane to ensure that the dialog will be a specific size.
+- AutoComplete should now recognize that listView.getItems().size() may be zero and will not display the popup in that case.
+
+---
+
 ###v2.0a Patch
 ---
 ####**[Notes]**
