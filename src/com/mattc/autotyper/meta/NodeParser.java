@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
 
+import com.google.common.collect.*;
 import javafx.scene.Node;
 import javafx.scene.control.Button;
 import javafx.scene.control.ComboBox;
@@ -14,9 +15,6 @@ import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
 import javafx.scene.control.ToggleButton;
 
-import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
 import com.google.common.reflect.ClassPath;
 import com.google.common.reflect.ClassPath.ClassInfo;
 import com.mattc.autotyper.util.Console;
@@ -25,7 +23,7 @@ import com.mattc.autotyper.util.Console;
 @FXCompatible
 public class NodeParser {
 
-	private static final Map<String, Class<? extends Node>> nodeMap = Maps.newHashMap();
+    private static final BiMap<String, Class<? extends Node>> nodeMap = HashBiMap.create();
 
 	static {
 
@@ -137,5 +135,13 @@ public class NodeParser {
 
 		return sb.toString().toLowerCase();
 	}
+
+    public static final Class<? extends Node> getClassFor(String tag) {
+        return nodeMap.get(tag);
+    }
+
+    public static final String getTagFor(Class<? extends Node> klass) {
+        return nodeMap.inverse().get(klass);
+    }
 
 }

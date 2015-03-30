@@ -10,8 +10,8 @@
         <artifactId>maven-compiler-plugin</artifactId>
         <version>3.1</version>
         <configuration>
-          <source>1.7</source>
-          <target>1.7</target>
+          <source>1.8</source>
+          <target>1.8</target>
         </configuration>
       </plugin>
     </plugins>
@@ -43,13 +43,6 @@
   		<version>1.2.0-RC4</version>
   		<scope>system</scope>
   		<systemPath>${basedir}/libs/JNativeHook.jar</systemPath>
-  	</dependency>
-  	<dependency>
-  		<groupId>java-fx</groupId>
-  		<artifactId>javafx</artifactId>
-  		<version>1.7.0_67</version>
-  		<scope>system</scope>
-  		<systemPath>${basedir}/libs/jfxrt.jar</systemPath>
   	</dependency>
   	<dependency>
   		<groupId>com.fifesoft</groupId>

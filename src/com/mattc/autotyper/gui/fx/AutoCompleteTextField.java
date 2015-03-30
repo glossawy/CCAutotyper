@@ -51,7 +51,7 @@ public class AutoCompleteTextField extends TextField implements AutoCompleteCont
 		super();
 
 		this.data = FXCollections.observableList(data);
-		this.listView = new ListView<String>(this.data);
+		this.listView = new ListView<>(this.data);
 		this.popup = new Popup();
 		this.popup.getContent().add(this.listView);
 
@@ -90,7 +90,7 @@ public class AutoCompleteTextField extends TextField implements AutoCompleteCont
 
 				if (!text.trim().isEmpty() && (getScene() != null)) {
 					AutoCompleteTextField.this.listView.setItems(FXGuiUtils.selectCompletionCandidates(AutoCompleteTextField.this.data, text, true));
-					if (!isPopupShowing()) {
+					if (!isPopupShowing() && AutoCompleteTextField.this.listView.getItems().size() > 0) {
 						showPopup();
 					}
 				} else if (AutoCompleteTextField.this.popup.isShowing() && text.trim().isEmpty()) {
@@ -224,7 +224,7 @@ public class AutoCompleteTextField extends TextField implements AutoCompleteCont
 		this.popup.show(AutoCompleteTextField.this, origin.getX(), origin.getY() + getHeight());
 	}
 
-	public void installXYChangeListners(Stage stage) {
+	public void installXYChangeListeners(Stage stage) {
 		stage.xProperty().addListener(new ChangeListener<Number>() {
 
 			@Override

@@ -51,8 +51,13 @@ public class FXOptionPane extends Stage {
 		centerOnScreen();
 		FXGuiUtils.makeAlwaysOnTop(this);
 
-		setScene(new Scene(builder.root));
-		if (builder.blocking) {
+
+        if(builder.width != -1 && builder.height != -1)
+		    setScene(new Scene(builder.root, builder.width, builder.height));
+        else
+            setScene(new Scene(builder.root));
+
+        if (builder.blocking) {
 			showAndWait();
 		} else {
 			show();
@@ -112,6 +117,8 @@ public class FXOptionPane extends Stage {
 
 		private final BorderPane root = new BorderPane();
 		private final ImageView icon = new ImageView();
+
+        private double width = -1, height = -1;
 
 		private final HBox msgBox = new HBox();
 		private Button accept;
@@ -247,6 +254,13 @@ public class FXOptionPane extends Stage {
 
 			return this;
 		}
+
+        public Builder setSize(double width, double height) {
+            this.width = width;
+            this.height = height;
+
+            return this;
+        }
 
 		public void build() {
 

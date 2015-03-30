@@ -459,8 +459,7 @@ public class FXKeyboard implements Keyboard {
 					}
 					type(c);
 				}
-
-			System.out.println("End");
+				
 				doType(VK_ENTER);
 			}
 

@@ -5,14 +5,20 @@ import static javafx.scene.input.KeyCombination.ModifierValue.UP;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Set;
+import java.util.prefs.BackingStoreException;
 import java.util.prefs.Preferences;
 
+import com.google.common.collect.Sets;
+import com.mattc.autotyper.AppVersion;
 import javafx.application.Application;
 import javafx.application.Platform;
+import javafx.beans.property.*;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
 import javafx.collections.FXCollections;
 import javafx.concurrent.Task;
+import javafx.concurrent.WorkerStateEvent;
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
 import javafx.geometry.Insets;
@@ -51,21 +57,27 @@ import com.mattc.autotyper.robot.FXKeyboard;
 import com.mattc.autotyper.robot.Keyboard;
 import com.mattc.autotyper.robot.SwingKeyboard;
 import com.mattc.autotyper.util.Console;
-import com.mattc.autotyper.util.IOUtils;
+
+import javax.xml.stream.Location;
 
 public class FXAutotyperWindow extends Application {
 
 	private static final String META_RANK = "RANK";
-
 	private static FXAutotyperWindow INSTANCE;
+
 	private final Preferences prefs = Preferences.userNodeForPackage(FXAutotyperWindow.class);
 	private final EvictingQueue<String> locations = EvictingQueue.create(50);
 
 	private Stage primaryStage;
 	private Keyboard keys;
+
+    private final ObjectProperty<File> fileProperty = new SimpleObjectProperty<>();
+    private final IntegerProperty inputDelayProperty = new SimpleIntegerProperty(40);
+    private final IntegerProperty waitTimeProperty = new SimpleIntegerProperty(5000);
+
 	private boolean doConfirm;
 	private volatile boolean doSave = false;
-	private int waitTime, inDelay, curRank;
+	private int curRank;
 
 	@Override
 	public void start(final Stage primaryStage) throws Exception {
@@ -130,10 +142,10 @@ public class FXAutotyperWindow extends Application {
 
 		wField.setPrefColumnCount(2);
 		wField.setAlignment(Pos.CENTER);
-		wField.setText(Integer.toString(this.waitTime / 1000));
+		wField.setText(Integer.toString(this.waitTimeProperty.get() / 1000));
 		iField.setPrefColumnCount(2);
 		iField.setAlignment(Pos.CENTER);
-		iField.setText(Integer.toString(this.inDelay));
+		iField.setText(Integer.toString(this.inputDelayProperty.get()));
 		locField.setPrefColumnCount(32);
 		locField.setPromptText(btnGroup.getMetaStringForSelected());
 		cBtn.setSelected(this.doConfirm);
@@ -141,7 +153,7 @@ public class FXAutotyperWindow extends Application {
 		locBox.getChildren().addAll(locLabel, locField);
 
 		FXGuiUtils.setMaxCharCount(wField, 2);
-		FXGuiUtils.setMaxCharCount(iField, 2);
+		FXGuiUtils.setMaxCharCount(iField, 3);
 		FXGuiUtils.setToggleTextSwitch(cBtn, "do", "do not");
 
 		btnGroup.selectedToggleProperty().addListener(new ChangeListener<Toggle>() {
@@ -156,11 +168,11 @@ public class FXAutotyperWindow extends Application {
 			@Override
 			public void changed(ObservableValue<? extends String> observable, String oldValue, String newValue) {
 				if (newValue.trim().isEmpty()) {
-					FXAutotyperWindow.this.waitTime = 1000;
+					FXAutotyperWindow.this.waitTimeProperty.set(1000);
 				} else if (!isValid(newValue)) {
 					wField.setText(oldValue);
 				} else {
-					FXAutotyperWindow.this.waitTime = Integer.parseInt(newValue) * 1000;
+					FXAutotyperWindow.this.waitTimeProperty.set(Integer.parseInt(newValue) * 1000);
 				}
 			}
 		});
@@ -170,11 +182,11 @@ public class FXAutotyperWindow extends Application {
 			public void changed(ObservableValue<? extends String> observable, String oldValue, String newValue) {
 
 				if (newValue.trim().isEmpty()) {
-					FXAutotyperWindow.this.inDelay = 1;
+					FXAutotyperWindow.this.inputDelayProperty.set(1);
 				} else if (!isValid(newValue)) {
 					iField.setText(oldValue);
 				} else {
-					FXAutotyperWindow.this.inDelay = Integer.parseInt(newValue);
+					FXAutotyperWindow.this.inputDelayProperty.set(Integer.parseInt(newValue));
 				}
 			}
 		});
@@ -186,10 +198,8 @@ public class FXAutotyperWindow extends Application {
 			}
 		});
 
-		startBtn.setOnAction(new EventHandler<ActionEvent>() {
-
-			// private Thread prevThread;
-			private Task<Boolean> prevTask;
+        startBtn.setOnAction(new EventHandler<ActionEvent>() {
+            Task<Boolean> typerTask;
 
 			@Override
 			public void handle(ActionEvent event) {
@@ -198,10 +208,11 @@ public class FXAutotyperWindow extends Application {
 				if (text.length() == 0) {
 					showError("Some Text Must be Entered!");
 					return;
-				} else if ((this.prevTask != null) && this.prevTask.isRunning()) {
+				} else if ((typerTask != null) && typerTask.isRunning()) {
 					showError("Cannot run two simultaneous jobs! Please wait for the other to terminate...");
 					return;
 				} else {
+                    typerTask = makeTask();
 					btnGroup.getSelectedToggle();
 					LocationHandler handler;
 					InformedOutcome outcome;
@@ -222,34 +233,34 @@ public class FXAutotyperWindow extends Application {
 						}
 					}
 
-					outcome = handler.canHandle(text);
+                    // Isolate Useful URI
+                    final String textNoTag;
+                    if(text.startsWith(handler.tag()))
+                        textNoTag = text.substring(text.indexOf(':') + 1).trim();
+                    else
+                        textNoTag = text;
+
+					outcome = handler.canHandle(textNoTag);
 
 					if (outcome.isFailure()) {
 						showError(outcome.reason);
 					} else {
-						final File file = handler.handle(text);
+						final File file = handler.handle(textNoTag);
 						try {
 							if (FXAutotyperWindow.this.doConfirm) if (!approve(file)) return;
 
-							// Porting over the Swing way was not as easy with the
-							// custom
+                            fileProperty.set(file);
+							// Porting over the Swing way was not as easy with the custom
 							// FXOptionPane. So this is built customly.
-							FXOptionPane.builder("Start Autotyping in " + (FXAutotyperWindow.this.waitTime / 1000) + " seconds?").setTitle("Autotyper Prompt").setOwner(FXAutotyperWindow.this.primaryStage).makeYesButton(new EventHandler<ActionEvent>() {
+							FXOptionPane.builder("Start Autotyping in " + (FXAutotyperWindow.this.waitTimeProperty.get() / 1000) + " seconds?\n\nAll windows will be hidden until the task is complete...").setTitle("Autotyper Prompt").setOwner(FXAutotyperWindow.this.primaryStage).makeYesButton(new EventHandler<ActionEvent>() {
 								@Override
 								public void handle(ActionEvent event) {
 									((Node) event.getSource()).getScene().getWindow().hide();
-									setInputDisabled(true);
-									// prevThread = makeExecutionThread(file);
-									// prevThread.setDaemon(true);
-									// prevThread.start();
-									// TODO Make Asynchronous
-									prevTask = makeExecutionTask(file);
-									Platform.runLater(prevTask);
-									primaryStage.toBack();
-									saveToHistory(text);
-									((AutoCompleteTextField) locField).addData(text);
+                                    Platform.runLater(typerTask);
+									saveToHistory(textNoTag, handler.tag());
+									((AutoCompleteTextField) locField).addData(handler.tag() + textNoTag);
 								}
-							}).makeNoButton(FXOptionPane.DEFAULT_CLOSE_ACTION).makeBlocking().build();
+							}).setSize(420, 200).makeNoButton(FXOptionPane.DEFAULT_CLOSE_ACTION).makeBlocking().build();
 						} catch (final Exception e1) {
 							Console.exception(e1);
 						}
@@ -258,45 +269,23 @@ public class FXAutotyperWindow extends Application {
 
 			}
 
-			private Task<Boolean> makeExecutionTask(final File file) {
-				return new Task<Boolean>() {
-					@Override
-					protected Boolean call() throws Exception {
-						try {
-							FXAutotyperWindow.this.keys.setInputDelay(FXAutotyperWindow.this.inDelay);
-							IOUtils.sleep(FXAutotyperWindow.this.waitTime);
-							FXAutotyperWindow.this.keys.typeFile(file);
-							setInputDisabled(false);
-							showMessage("Finished typing " + locField.getText() + "!");
-							return true;
-						} catch (final IOException ex) {
-							Console.exception(ex);
-							showError("Failure to Autotype, Exception of type " + ex.getClass() + " occurred...");
-						}
+            private void prestart() {
+                setInputDisabled(true);
+                primaryStage.hide();
+            }
 
-						return false;
-					}
-				};
-			}
+            private void onSuccess(WorkerStateEvent e) {
+                setInputDisabled(false);
+                primaryStage.show();
+                showMessage("Autotyping Complete!");
+            }
 
-			//TODO
-			@SuppressWarnings("unused")
-			private Thread makeExecutionThread(final File file) {
-				return new Thread(new Runnable() {
-					@Override
-					public void run() {
-						try {
-							FXAutotyperWindow.this.keys.setInputDelay(FXAutotyperWindow.this.inDelay);
-							IOUtils.sleep(FXAutotyperWindow.this.waitTime);
-							FXAutotyperWindow.this.keys.typeFile(file);
-							setInputDisabled(false);
-							showMessage("Finished typing " + file.getName() + "!");
-						} catch (final IOException e) {
-							Console.exception(e);
-						}
-					}
-				}, "Typer");
-			}
+            private void onError(WorkerStateEvent e) {
+                setInputDisabled(false);
+                primaryStage.show();
+                Console.exception(e.getSource().getException());
+                showError("Autotyping Failed!: " + e.getSource().getException().getMessage());
+            }
 
 			private void setInputDisabled(boolean state) {
 				locField.setDisable(state);
@@ -304,6 +293,14 @@ public class FXAutotyperWindow extends Application {
 				iField.setDisable(state);
 				cBtn.setDisable(state);
 			}
+
+            private Task<Boolean> makeTask() {
+                Task<Boolean> task = new FXAutoTypingTask(keys, fileProperty, waitTimeProperty, inputDelayProperty, this::prestart);
+                task.setOnSucceeded(this::onSuccess);
+                task.setOnFailed(this::onError);
+
+                return task;
+            }
 
 		});
 
@@ -332,7 +329,7 @@ public class FXAutotyperWindow extends Application {
 		});
 
 		this.doSave = true;
-		((AutoCompleteTextField) locField).installXYChangeListners(primaryStage);
+		((AutoCompleteTextField) locField).installXYChangeListeners(primaryStage);
 
 		addIcons(primaryStage);
 		primaryStage.setTitle(Ref.TITLE + " " + Ref.VERSION);
@@ -344,7 +341,7 @@ public class FXAutotyperWindow extends Application {
 	@Override
 	public void stop() {
 		if (this.doSave) {
-			savePrefs(this.waitTime, this.inDelay, this.curRank, this.locations);
+			savePrefs(this.waitTimeProperty.get(), this.inputDelayProperty.get(), this.curRank, this.locations);
 		}
 		this.keys.destroy();
 	}
@@ -414,23 +411,8 @@ public class FXAutotyperWindow extends Application {
 			}
 		});
 
-		infoBtn.setOnAction(new EventHandler<ActionEvent>() {
-
-			@Override
-			public void handle(ActionEvent event) {
-				getHostServices().showDocument(Strings.GITHUB_URL);
-			}
-
-		});
-
-		copyBtn.setOnAction(new EventHandler<ActionEvent>() {
-
-			@Override
-			public void handle(ActionEvent event) {
-				Autotyper.printCopyrightStatement(true);
-			}
-
-		});
+        infoBtn.setOnAction((e) -> getHostServices().showDocument(Strings.GITHUB_URL));
+        copyBtn.setOnAction((e) -> Autotyper.printCopyrightStatement(true));
 
 		bar.getChildren().addAll(infoBtn, copyBtn);
 
@@ -438,6 +420,7 @@ public class FXAutotyperWindow extends Application {
 	}
 
 	private void savePrefs(int waitTime, int delay, int selected, EvictingQueue<String> locations) {
+        this.prefs.put(Strings.PREFS_GUI_VERSION, AppVersion.VERSION);
 		this.prefs.putInt(Strings.PREFS_GUI_WAIT, waitTime);
 		this.prefs.putInt(Strings.PREFS_GUI_INPUTDELAY, delay);
 		this.prefs.putInt(Strings.PREFS_GUI_SELECTED, selected);
@@ -450,20 +433,37 @@ public class FXAutotyperWindow extends Application {
 	}
 
 	private void loadPrefs() {
-		this.waitTime = this.prefs.getInt(Strings.PREFS_GUI_WAIT, 5000);
-		this.inDelay = this.prefs.getInt(Strings.PREFS_GUI_INPUTDELAY, 40);
+        String version = this.prefs.get(Strings.PREFS_GUI_VERSION, "0.0.0");
+
+        if(AppVersion.compareTo(version) != 0)
+            try{
+                prefs.clear();
+            } catch(BackingStoreException e){
+                Console.exception(e);
+            }
+
+        this.waitTimeProperty.set(this.prefs.getInt(Strings.PREFS_GUI_WAIT, 5000));
+        this.inputDelayProperty.set(this.prefs.getInt(Strings.PREFS_GUI_INPUTDELAY, 40));
 		this.curRank = this.prefs.getInt(Strings.PREFS_GUI_SELECTED, 3);
 		this.doConfirm = this.prefs.getBoolean(Strings.PREFS_GUI_CONFIRM, true);
 
 		this.curRank = Math.max(1, Math.min(4, this.curRank));
 
+        Set<String> locSet = Sets.newHashSet();
+
+        locSet.add(LocationHandler.PASTEBIN.tag() + "JCR8YTww");
+        locSet.add(LocationHandler.PASTEBIN.tag() + "6gyLvm4K");
+        locSet.add(LocationHandler.PASTEBIN.tag() + "nAinUn1h");
+
 		for (int i = 0; i < 50; i++) {
 			final String s = this.prefs.get(Strings.PREFS_GUI_MEMORY + i, "null");
 
 			if (!s.equals("null")) {
-				this.locations.add(s);
+				locSet.add(s);
 			}
 		}
+
+        locations.addAll(locSet);
 	}
 
 	private void showError(String message) {
@@ -474,17 +474,16 @@ public class FXAutotyperWindow extends Application {
 		FXOptionPane.showMessage(this.primaryStage, "Autotyper Message", message, IconType.INFO);
 	}
 
-	private void saveToHistory(String loc) {
-		if (this.locations.contains(loc)) return;
-
-		this.locations.add(loc);
+	private void saveToHistory(String loc, String tag) {
+		if (!this.locations.contains(tag + loc))
+            this.locations.add(tag + loc);
 	}
 
 	private void obtainKeyboard() {
 		if (FXGuiUtils.isFXRobotAvailable()) {
-			this.keys = new FXKeyboard(this.inDelay);
+			this.keys = new FXKeyboard(this.inputDelayProperty.get());
 		} else {
-			this.keys = new SwingKeyboard(this.inDelay);
+			this.keys = new SwingKeyboard(this.inputDelayProperty.get());
 		}
 		// this.keys = new SwingKeyboard(this.inDelay);
 	}

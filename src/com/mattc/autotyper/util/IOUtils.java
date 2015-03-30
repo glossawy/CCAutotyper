@@ -1,6 +1,6 @@
 package com.mattc.autotyper.util;
 
-import java.io.BufferedInputStream;
+import java.io.BufferedInputStream; 
 import java.io.ByteArrayOutputStream;
 import java.io.Closeable;
 import java.io.File;

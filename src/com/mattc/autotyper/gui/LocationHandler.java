@@ -24,7 +24,7 @@ import com.mattc.autotyper.meta.SwingCompatible;
 @SwingCompatible
 public enum LocationHandler {
 
-	FILE {
+	FILE ("Local File:") {
 		@Override
 		public File handle(String text) {
 			final File f = new File(text);
@@ -42,7 +42,7 @@ public enum LocationHandler {
 				return new InformedOutcome(this, reason, false, new FileNotFoundException(reason));
 		}
 	},
-	URL {
+	URL ("Web URL:") {
 		@Override
 		public File handle(String text) {
 			try {
@@ -74,7 +74,7 @@ public enum LocationHandler {
 			}
 		}
 	},
-	PASTEBIN {
+	PASTEBIN ("Pastebin:"){
 		@Override
 		public File handle(String text) {
 			return Downloader.getPastebin(text);
@@ -103,15 +103,19 @@ public enum LocationHandler {
 		}
 	};
 
+    private final String tag;
+
+    private LocationHandler(String tag) {
+        this.tag = tag;
+    }
+
 	/**
 	 * Take Location and Obtain File
 	 * 
 	 * @param text
 	 * @return
 	 */
-	public File handle(String text) {
-		throw new AbstractMethodError();
-	}
+	abstract public File handle(String text);
 
 	/**
 	 * Take Location and determine if it can be handled by this LocationHandler.
@@ -120,9 +124,11 @@ public enum LocationHandler {
 	 * @param text
 	 * @return
 	 */
-	public InformedOutcome canHandle(String text) {
-		throw new AbstractMethodError();
-	}
+	abstract public InformedOutcome canHandle(String text);
+
+    public String tag() {
+        return tag;
+    }
 
 	/**
 	 * Auto-Detect the LocationHandler to use by using the {@link #canHandle(String)
@@ -135,6 +141,10 @@ public enum LocationHandler {
 	 */
 	public static LocationHandler detect(String text, ExceptionHandler handler) throws Exception {
 		for (final LocationHandler lh : LocationHandler.values()) {
+
+            if(text.startsWith(lh.tag))
+                return lh;
+
 			final InformedOutcome out = lh.canHandle(text);
 
 			if (out.isSuccess())
