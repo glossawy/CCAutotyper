@@ -1,7 +1,8 @@
 package com.mattc.autotyper.gui.fx;
 
-import java.util.concurrent.atomic.AtomicBoolean;
-
+import com.google.common.annotations.Beta;
+import com.mattc.autotyper.Ref;
+import com.mattc.autotyper.Strings.Resources;
 import javafx.application.Platform;
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
@@ -22,13 +23,9 @@ import javafx.stage.Stage;
 import javafx.stage.StageStyle;
 import javafx.stage.Window;
 
-import com.google.common.annotations.Beta;
-import com.mattc.autotyper.Ref;
-import com.mattc.autotyper.Strings.Resources;
-import com.mattc.autotyper.meta.InDev;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 @Beta
-@InDev(sinceVersion = 2.0, lastUpdate = 2.0, author = "Matthew Crocco")
 public class FXOptionPane extends Stage {
 
 	public static final int MESSAGE_MIN_WIDTH = 180;

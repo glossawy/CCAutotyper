@@ -1,12 +1,12 @@
 package com.mattc.autotyper;
 
+import com.mattc.autotyper.util.Console;
+import com.mattc.autotyper.util.IOUtils;
+
 import java.io.File;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
-
-import com.mattc.autotyper.util.Console;
-import com.mattc.autotyper.util.IOUtils;
 
 /**
  * Convenience Utilities to handle downloading Files and Pastebins to Temp Files

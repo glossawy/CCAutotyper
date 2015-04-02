@@ -1,51 +1,5 @@
 package com.mattc.autotyper;
 
-import static com.google.common.base.StandardSystemProperty.JAVA_CLASS_PATH;
-import static com.google.common.base.StandardSystemProperty.JAVA_CLASS_VERSION;
-import static com.google.common.base.StandardSystemProperty.JAVA_COMPILER;
-import static com.google.common.base.StandardSystemProperty.JAVA_HOME;
-import static com.google.common.base.StandardSystemProperty.JAVA_IO_TMPDIR;
-import static com.google.common.base.StandardSystemProperty.JAVA_SPECIFICATION_NAME;
-import static com.google.common.base.StandardSystemProperty.JAVA_SPECIFICATION_VENDOR;
-import static com.google.common.base.StandardSystemProperty.JAVA_SPECIFICATION_VERSION;
-import static com.google.common.base.StandardSystemProperty.JAVA_VENDOR;
-import static com.google.common.base.StandardSystemProperty.JAVA_VENDOR_URL;
-import static com.google.common.base.StandardSystemProperty.JAVA_VERSION;
-import static com.google.common.base.StandardSystemProperty.JAVA_VM_NAME;
-import static com.google.common.base.StandardSystemProperty.JAVA_VM_SPECIFICATION_NAME;
-import static com.google.common.base.StandardSystemProperty.JAVA_VM_SPECIFICATION_VENDOR;
-import static com.google.common.base.StandardSystemProperty.JAVA_VM_SPECIFICATION_VERSION;
-import static com.google.common.base.StandardSystemProperty.JAVA_VM_VENDOR;
-import static com.google.common.base.StandardSystemProperty.JAVA_VM_VERSION;
-import static com.google.common.base.StandardSystemProperty.OS_NAME;
-import static com.google.common.base.StandardSystemProperty.OS_VERSION;
-import static com.mattc.autotyper.Strings.FLAG_FILE;
-import static com.mattc.autotyper.Strings.FLAG_GUI;
-import static com.mattc.autotyper.Strings.FLAG_INPUT_DELAY;
-import static com.mattc.autotyper.Strings.FLAG_PASTE;
-import static com.mattc.autotyper.Strings.FLAG_URL;
-import static com.mattc.autotyper.Strings.FLAG_WAIT;
-import static com.mattc.autotyper.util.Console.logToFile;
-import it.sauronsoftware.junique.AlreadyLockedException;
-import it.sauronsoftware.junique.JUnique;
-
-import java.io.ByteArrayOutputStream;
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.io.PrintStream;
-import java.util.Arrays;
-
-import javafx.application.Platform;
-
-import javax.swing.JOptionPane;
-import javax.swing.UIManager;
-
-import org.jnativehook.GlobalScreen;
-import org.jnativehook.NativeHookException;
-import org.jnativehook.keyboard.NativeKeyListener;
-
 import com.mattc.autotyper.gui.AutotyperWindow;
 import com.mattc.autotyper.gui.GuiAccessor;
 import com.mattc.autotyper.gui.fx.FXAutotyperWindow;
@@ -55,6 +9,20 @@ import com.mattc.autotyper.robot.SwingKeyboard;
 import com.mattc.autotyper.util.Console;
 import com.mattc.autotyper.util.IOUtils;
 import com.mattc.autotyper.util.OS;
+import it.sauronsoftware.junique.AlreadyLockedException;
+import it.sauronsoftware.junique.JUnique;
+import javafx.application.Platform;
+import org.jnativehook.GlobalScreen;
+import org.jnativehook.NativeHookException;
+import org.jnativehook.keyboard.NativeKeyListener;
+
+import javax.swing.*;
+import java.io.*;
+import java.util.Arrays;
+
+import static com.google.common.base.StandardSystemProperty.*;
+import static com.mattc.autotyper.Strings.*;
+import static com.mattc.autotyper.util.Console.logToFile;
 
 /**
  * The Main Class of the Application meant to allow Minecraft Players who use
@@ -71,7 +39,6 @@ import com.mattc.autotyper.util.OS;
 public class Autotyper {
 
 	private static GlobalScreen global;
-	private static Autotyper __instance;
 
 	private final GuiAccessor gui;
 
@@ -88,7 +55,16 @@ public class Autotyper {
 
 	/**
 	 * Take the Program Arguments and execute the Autotyping procedure. Either using
-	 * the program args or by loading up a GUI interface.
+	 * the program args or by loading up a GUI interface. <br />
+     * <br />
+     * If the GUI Flag is found, whatever GuiAccessor was obtained in construction has
+     * {@link com.mattc.autotyper.gui.GuiAccessor#doShow()} executed. This means either keyboard
+     * may be used. FX or Swing. <br />
+     * <br />
+     * If we are running by CLI, {@link com.mattc.autotyper.robot.SwingKeyboard} is used since
+     * {@link com.mattc.autotyper.robot.FXKeyboard} cannot be used outside of the JavaFX Application
+     * Thread. Before executing in the CLI, the arguments are parsed into a Parameters object and then
+     * handled as appropriate.
 	 * 
 	 * @param args
 	 */
@@ -96,7 +72,7 @@ public class Autotyper {
 		if (args[0].equalsIgnoreCase(FLAG_GUI)) {
 			this.gui.doShow();
 
-			// We have to terminate an FX GUI
+			// We have to terminate an FX GUI if it survives
 			if (!(this.gui instanceof AutotyperWindow)) {
 				System.exit(0);
 			}
@@ -105,13 +81,11 @@ public class Autotyper {
 			final Parameters params = parseArgs(args);
 			final SwingKeyboard keys = new SwingKeyboard(params.inputDelay);
 			final File f = params.file;
+
 			try {
-				Thread.sleep(params.waitTime);
-				// JCR8YTww -- Bubbles (Concise, Good Test)
-				// 6gyLvm4K -- Milkshake GUI (Lots of Long Code)
-				// nAinUn1h -- Advanced Calculator (Lots of Complex Tables)
+				IOUtils.sleep(params.waitTime);
 				keys.typeFile(f);
-			} catch (IOException | InterruptedException e) {
+			} catch (IOException e) {
 				Console.exception(e);
 			} finally {
 				keys.destroy();
@@ -173,19 +147,6 @@ public class Autotyper {
 	}
 
 	/**
-	 * Get the only Instance of Autotyper.
-	 * 
-	 * @return
-	 */
-	public static Autotyper instance() {
-		return __instance;
-	}
-
-	public static void exit() {
-		System.exit(0);
-	}
-
-	/**
 	 * Register a NativeKeyListener to receive ALL KeyEvents
 	 * 
 	 * @param listener
@@ -230,45 +191,36 @@ public class Autotyper {
 			System.exit(0);
 		}
 
-		// Setup System Failsafes
-		Thread.setDefaultUncaughtExceptionHandler(new Thread.UncaughtExceptionHandler() {
-			@Override
-			public void uncaughtException(Thread t, Throwable e) {
-				Console.exception(e, "Caught by UncaughtExceptionHandler");
-
-				// if(__instance != null)
-				// __instance.keyboard.writeCrashImage();
-			}
-		});
-		Runtime.getRuntime().addShutdownHook(new Thread(SHUTDOWN_HOOK, "Shutdown"));
+        Thread.setDefaultUncaughtExceptionHandler((t, e) -> Console.exception(e, "Caught by UncaughtExceptionHandler"));
+		Runtime.getRuntime().addShutdownHook(new Thread(Autotyper::onShutdown, "Shutdown"));
 
 		printSysInfo();
 		setLookAndFeel();
-		__instance = new Autotyper();
-		__instance.launch(args);
+        new Autotyper().launch(args);
 	}
 
 	/**
 	 * Print out how the program should be executed to the Command Line
 	 */
 	private static void printUsage() {
-		final String std = "\t%s";
+		final String std = "\t%-8s";
 
 		System.out.println();
 		System.out.println();
 		System.out.println(Ref.TITLE + " | " + Ref.VERSION + " by " + Ref.AUTHOR);
-		System.out.println("Usage: java -jar ccautotyper.jar [file|url|paste] <location> [-wait] [-inputDelay]");
-		System.out.println(String.format(std, FLAG_FILE) + "     - Indicates the file is on the local filesystem");
-		System.out.println(String.format(std, FLAG_URL) + "      - Indicates the file must be downloaded");
-		System.out.println(String.format(std, FLAG_PASTE) + "    - Indicates the file is located on pastebin");
-		System.out.println("\tlocation - Either the path to the file, the url, or the pastebin code");
+		System.out.println("Usage: java -jar ccautotyper.jar [file|url|paste|gui] <location> [-wait] [-inputDelay]");
+		System.out.println(String.format(std, FLAG_FILE) + " - Indicates the file is on the local filesystem");
+		System.out.println(String.format(std, FLAG_URL)  + " - Indicates the file must be downloaded");
+		System.out.println(String.format(std, FLAG_PASTE)+ " - Indicates the file is located on pastebin");
+        System.out.println(String.format(std, FLAG_GUI)  + " - Display GUI, No Other Parameters Required");
+        System.out.println(String.format(std, "Location")+ " - Either the path to the file, the url, or the pastebin code");
 		System.out.println();
 		System.out.println("\t[Optional Parameters -- Order Does Not Matter]");
 		System.out.println(String.format(std, FLAG_WAIT) + "    - The Seconds the Autotyper should wait before typing. [Default: 10]");
-		System.out.println(String.format(std, FLAG_INPUT_DELAY) + " - The Millisecond Delay between Keypresses [Default: 40]");
+		System.out.println(String.format(std, FLAG_INPUT_DELAY) + " - The Millisecond Delay between Key Strokes [Default: 40]");
 		System.out.println();
 		System.out.println("\tExample:");
-		System.out.println("\t\tjava -jar ccautotyper.jar paste JCR8YTww -inDelay 10 -wait 5");
+		System.out.println("\t\t" + Strings.EXAMPLE_EXECUTION);
 		System.out.println("\t\tGUI Coming Soon!");
 	}
 
@@ -287,6 +239,7 @@ public class Autotyper {
 		final String classpath = "CP: " + JAVA_CLASS_PATH.value();
 		final String cores = "TN: " + OS.processorCount() + " cores TMP_DIR: " + JAVA_IO_TMPDIR.value();
 
+        // Do not bother logging to console
 		logToFile("");
 		logToFile("========== SYS INFO ==========");
 		logToFile(home);
@@ -364,50 +317,43 @@ public class Autotyper {
 				UIManager.setLookAndFeel(UIManager.getCrossPlatformLookAndFeelClassName());
 				Console.info("SUCCESS! Look and Feel Set to Cross-Platform LookAndFeel!");
 			} catch (final Exception ex) {
-				Console.bigWarning("FAILURE! Failure to Set Look And Feel!");
+				Console.bigWarning("FAILURE! Failure to Set Look And Feel! Using Default...");
 				Console.exception(ex);
 			}
 		}
 	}
 
 	private static void killSystemStreams() {
-		// Ignore JNativeHook's Constant Output
+		// Filter out RTextAreaBase's 'yo'
 		System.setOut(new PrintStream(System.out) {
 			@Override
 			public void print(String s) {
-				if (s.equalsIgnoreCase("yo")) {
-					final StackTraceElement[] elements = Thread.currentThread().getStackTrace();
-					for (final StackTraceElement ste : elements) {
-						System.out.println(ste);
-					}
-				} else {
-					super.print(s);
-				}
+				super.print(s);
 			}
 
 			// Correct for RTextAreaBase Printing "Yo"
 			@Override
 			public void println(String s) {
-
 				if (s.equalsIgnoreCase("yo"))
 					return;
-				else {
+				else
 					super.println(s);
-				}
 			}
 		});
+
+        // Kill JNativeHooks incessant output
 		System.setErr(new PrintStream(NULL_STREAM));
 	}
 
-	private static final Runnable SHUTDOWN_HOOK = new Runnable() {
-		@Override
-		public void run() {
-			Console.debug("Finalizing Registers...");
-			JUnique.releaseLock(Ref.APP_ID);
-			GlobalScreen.unregisterNativeHook();
-		}
-	};
+    // Finalization Method called if JVM exits properly
+    // is a Runtime Shutdown Hook
+    private static void onShutdown() {
+        Console.debug("Finalizing Registers...");
+        JUnique.releaseLock(Ref.APP_ID);
+        GlobalScreen.unregisterNativeHook();
+    }
 
+    // Do nothing with any input
 	private static final OutputStream NULL_STREAM = new OutputStream() {
 		@Override
 		public void write(int b) throws IOException {

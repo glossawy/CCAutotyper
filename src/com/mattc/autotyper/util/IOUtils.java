@@ -1,29 +1,17 @@
 package com.mattc.autotyper.util;
 
-import java.io.BufferedInputStream; 
-import java.io.ByteArrayOutputStream;
-import java.io.Closeable;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.io.Reader;
-import java.io.StringReader;
-import java.io.Writer;
-import java.net.HttpURLConnection;
-import java.net.URL;
-import java.nio.charset.Charset;
-import java.util.Properties;
-
 import com.google.common.base.Charsets;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Splitter;
 import com.google.common.io.Files;
 import com.mattc.autotyper.gui.SingleStringProcessor;
 import com.mattc.autotyper.util.OS.MemoryUnit;
+
+import java.io.*;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.nio.charset.Charset;
+import java.util.Properties;
 
 /**
  * A Collection of Utilities dedicated to the try-catch mess that is java.io. We

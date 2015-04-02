@@ -1,22 +1,35 @@
 package com.mattc.autotyper.gui.fx;
 
-import static javafx.scene.input.KeyCombination.ModifierValue.DOWN;
-import static javafx.scene.input.KeyCombination.ModifierValue.UP;
-
-import java.io.File;
-import java.io.IOException;
-import java.util.Set;
-import java.util.prefs.BackingStoreException;
-import java.util.prefs.Preferences;
-
+import com.google.common.base.Charsets;
+import com.google.common.collect.EvictingQueue;
+import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
+import com.google.common.hash.HashCode;
+import com.google.common.hash.HashFunction;
+import com.google.common.hash.Hashing;
 import com.mattc.autotyper.AppVersion;
+import com.mattc.autotyper.Autotyper;
+import com.mattc.autotyper.Ref;
+import com.mattc.autotyper.Strings;
+import com.mattc.autotyper.Strings.Resources;
+import com.mattc.autotyper.Strings.Resources.Resource;
+import com.mattc.autotyper.gui.ConfirmFileDialog;
+import com.mattc.autotyper.gui.GuiAccessor;
+import com.mattc.autotyper.gui.LocationHandler;
+import com.mattc.autotyper.gui.fx.FXOptionPane.IconType;
+import com.mattc.autotyper.meta.Outcome;
+import com.mattc.autotyper.robot.FXKeyboard;
+import com.mattc.autotyper.robot.Keyboard;
+import com.mattc.autotyper.robot.SwingKeyboard;
+import com.mattc.autotyper.util.Console;
 import javafx.application.Application;
 import javafx.application.Platform;
-import javafx.beans.property.*;
+import javafx.beans.property.IntegerProperty;
+import javafx.beans.property.ObjectProperty;
+import javafx.beans.property.SimpleIntegerProperty;
+import javafx.beans.property.SimpleObjectProperty;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
-import javafx.collections.FXCollections;
 import javafx.concurrent.Task;
 import javafx.concurrent.WorkerStateEvent;
 import javafx.event.ActionEvent;
@@ -25,12 +38,7 @@ import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.Scene;
-import javafx.scene.control.Button;
-import javafx.scene.control.Label;
-import javafx.scene.control.RadioButton;
-import javafx.scene.control.TextField;
-import javafx.scene.control.Toggle;
-import javafx.scene.control.ToggleButton;
+import javafx.scene.control.*;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.input.KeyCode;
@@ -42,34 +50,29 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.StackPane;
 import javafx.stage.Stage;
 
-import com.google.common.collect.EvictingQueue;
-import com.mattc.autotyper.Autotyper;
-import com.mattc.autotyper.Ref;
-import com.mattc.autotyper.Strings;
-import com.mattc.autotyper.Strings.Resources;
-import com.mattc.autotyper.Strings.Resources.Resource;
-import com.mattc.autotyper.gui.ConfirmFileDialog;
-import com.mattc.autotyper.gui.GuiAccessor;
-import com.mattc.autotyper.gui.LocationHandler;
-import com.mattc.autotyper.gui.fx.FXOptionPane.IconType;
-import com.mattc.autotyper.meta.InformedOutcome;
-import com.mattc.autotyper.robot.FXKeyboard;
-import com.mattc.autotyper.robot.Keyboard;
-import com.mattc.autotyper.robot.SwingKeyboard;
-import com.mattc.autotyper.util.Console;
+import java.io.File;
+import java.io.IOException;
+import java.util.Set;
+import java.util.prefs.BackingStoreException;
+import java.util.prefs.Preferences;
 
-import javax.xml.stream.Location;
+import static javafx.scene.input.KeyCombination.ModifierValue.DOWN;
+import static javafx.scene.input.KeyCombination.ModifierValue.UP;
+
+// TODO Split into more manageable objects
+// TODO Make EventHandlers Methods and use Method References (i.e. this::onSubmitAutotypingTask and so on)
 
 public class FXAutotyperWindow extends Application {
 
+    /** Meta Key for Rank in MetaToggleGroup */
 	private static final String META_RANK = "RANK";
 	private static FXAutotyperWindow INSTANCE;
 
 	private final Preferences prefs = Preferences.userNodeForPackage(FXAutotyperWindow.class);
 	private final EvictingQueue<String> locations = EvictingQueue.create(50);
 
-	private Stage primaryStage;
 	private Keyboard keys;
+    private Stage primaryStage;
 
     private final ObjectProperty<File> fileProperty = new SimpleObjectProperty<>();
     private final IntegerProperty inputDelayProperty = new SimpleIntegerProperty(40);
@@ -87,13 +90,13 @@ public class FXAutotyperWindow extends Application {
 		FXAutotyperWindow.INSTANCE = this;
 		this.primaryStage = primaryStage;
 
+        // Load Preferences and obtain proper Keyboard
 		loadPrefs();
 		obtainKeyboard();
 
+        // Initialize Parent Nodes
 		final BorderPane root = new BorderPane();
-
 		final StackPane gridStack = new StackPane();
-
 		final GridPane grid = new GridPane();
 		grid.setGridLinesVisible(false);
 		grid.setHgap(5);
@@ -132,7 +135,7 @@ public class FXAutotyperWindow extends Application {
 		final HBox locBox = new HBox(5);
 		final Label locLabel = new Label("Location:");
 
-		final TextField locField = new AutoCompleteTextField(FXCollections.observableArrayList(this.locations));
+		final AutoCompleteTextField locField = new AutoCompleteTextField(Lists.newArrayList(locations));
 		final InteractiveBox wBox = new InteractiveBox("Wait %t seconds before typing.", Pos.CENTER);
 		final InteractiveBox iBox = new InteractiveBox("Wait %t milliseconds between keystrokes.", Pos.CENTER);
 		final InteractiveBox cBox = new InteractiveBox("I %B want to confirm before typing.", Pos.CENTER);
@@ -215,7 +218,7 @@ public class FXAutotyperWindow extends Application {
                     typerTask = makeTask();
 					btnGroup.getSelectedToggle();
 					LocationHandler handler;
-					InformedOutcome outcome;
+					Outcome outcome;
 
 					if (fileBtn.isSelected()) {
 						handler = LocationHandler.FILE;
@@ -252,13 +255,13 @@ public class FXAutotyperWindow extends Application {
                             fileProperty.set(file);
 							// Porting over the Swing way was not as easy with the custom
 							// FXOptionPane. So this is built customly.
-							FXOptionPane.builder("Start Autotyping in " + (FXAutotyperWindow.this.waitTimeProperty.get() / 1000) + " seconds?\n\nAll windows will be hidden until the task is complete...").setTitle("Autotyper Prompt").setOwner(FXAutotyperWindow.this.primaryStage).makeYesButton(new EventHandler<ActionEvent>() {
+							FXOptionPane.builder("Start Autotyping in " + (FXAutotyperWindow.this.waitTimeProperty.get() / 1000) + " seconds?\n\nAll windows will be hidden until the task is complete...").setTitle("Autotyper Prompt").setOwner(primaryStage).makeYesButton(new EventHandler<ActionEvent>() {
 								@Override
 								public void handle(ActionEvent event) {
 									((Node) event.getSource()).getScene().getWindow().hide();
                                     Platform.runLater(typerTask);
-									saveToHistory(textNoTag, handler.tag());
-									((AutoCompleteTextField) locField).addData(handler.tag() + textNoTag);
+									if(saveToHistory(textNoTag, handler.tag()))
+									    locField.addData(handler.tag() + textNoTag);
 								}
 							}).setSize(420, 200).makeNoButton(FXOptionPane.DEFAULT_CLOSE_ACTION).makeBlocking().build();
 						} catch (final Exception e1) {
@@ -306,6 +309,7 @@ public class FXAutotyperWindow extends Application {
 
 		// Put it all together
 
+        // I have to admit all those constant numbers just look reallllly annoying.
 		grid.add(wBox, 0, 0, 1, 1);
 		grid.add(iBox, 0, 1, 1, 1);
 		grid.add(cBox, 0, 2, 1, 1);
@@ -323,13 +327,13 @@ public class FXAutotyperWindow extends Application {
 			@Override
 			public void handle(MouseEvent event) {
 				if (!locField.contains(locField.sceneToLocal(event.getSceneX(), event.getSceneY()))) {
-					((AutoCompleteTextField) locField).hidePopup();
+					locField.hidePopup();
 				}
 			}
 		});
 
 		this.doSave = true;
-		((AutoCompleteTextField) locField).installXYChangeListeners(primaryStage);
+		locField.installXYChangeListeners(primaryStage);
 
 		addIcons(primaryStage);
 		primaryStage.setTitle(Ref.TITLE + " " + Ref.VERSION);
@@ -346,6 +350,7 @@ public class FXAutotyperWindow extends Application {
 		this.keys.destroy();
 	}
 
+    // FXAutotyperWindow Specific Image Loading. We only expect 4
 	private void addIcons(Stage stage) {
 		final Image[] img = new Image[4];
 
@@ -378,36 +383,31 @@ public class FXAutotyperWindow extends Application {
 		final Button infoBtn = new Button("", new ImageView(infoIcon));
 		final Button copyBtn = new Button("", new ImageView(copyIcon));
 
+        final KeyCodeCombination infoAcc = new KeyCodeCombination(KeyCode.I, UP, DOWN, UP, UP, UP);
+        final KeyCodeCombination copyAcc = new KeyCodeCombination(KeyCode.C, UP, DOWN, UP, UP, UP);
+
 		infoBtn.setId("glass-button");
 		copyBtn.setId("glass-button");
 
 		infoBtn.sceneProperty().addListener(new ChangeListener<Scene>() {
-
 			@Override
 			public void changed(ObservableValue<? extends Scene> observable, Scene oldValue, Scene newValue) {
-				if (newValue != null) {
-					newValue.getAccelerators().put(new KeyCodeCombination(KeyCode.I, UP, UP, DOWN, UP, UP), new Runnable() {
-						@Override
-						public void run() {
-							getHostServices().showDocument(Strings.GITHUB_URL);
-						}
-					});
-				}
+				if (newValue != null)
+					newValue.getAccelerators().put(infoAcc, FXAutotyperWindow.this::showGithubPage);
+
+                if (oldValue != null)
+                    oldValue.getAccelerators().remove(infoAcc);
 			}
 		});
 
 		copyBtn.sceneProperty().addListener(new ChangeListener<Scene>() {
-
 			@Override
 			public void changed(ObservableValue<? extends Scene> observable, Scene oldValue, Scene newValue) {
-				if (newValue != null) {
-					newValue.getAccelerators().put(new KeyCodeCombination(KeyCode.C, UP, UP, DOWN, UP, UP), new Runnable() {
-						@Override
-						public void run() {
-							Autotyper.printCopyrightStatement(true);
-						}
-					});
-				}
+				if (newValue != null)
+					newValue.getAccelerators().put(copyAcc, FXAutotyperWindow.this::showCopyrightInfo);
+
+                if (oldValue != null)
+                    oldValue.getAccelerators().remove(copyAcc);
 			}
 		});
 
@@ -419,8 +419,16 @@ public class FXAutotyperWindow extends Application {
 		return bar;
 	}
 
+    private void showGithubPage() {
+        getHostServices().showDocument(Strings.GITHUB_URL);
+    }
+
+    private void showCopyrightInfo() {
+        Autotyper.printCopyrightStatement(true);
+    }
+
 	private void savePrefs(int waitTime, int delay, int selected, EvictingQueue<String> locations) {
-        this.prefs.put(Strings.PREFS_GUI_VERSION, AppVersion.VERSION);
+        this.prefs.put(Strings.PREFS_GUI_VERSION, Ref.VERSION);
 		this.prefs.putInt(Strings.PREFS_GUI_WAIT, waitTime);
 		this.prefs.putInt(Strings.PREFS_GUI_INPUTDELAY, delay);
 		this.prefs.putInt(Strings.PREFS_GUI_SELECTED, selected);
@@ -449,21 +457,20 @@ public class FXAutotyperWindow extends Application {
 
 		this.curRank = Math.max(1, Math.min(4, this.curRank));
 
-        Set<String> locSet = Sets.newHashSet();
-
-        locSet.add(LocationHandler.PASTEBIN.tag() + "JCR8YTww");
-        locSet.add(LocationHandler.PASTEBIN.tag() + "6gyLvm4K");
-        locSet.add(LocationHandler.PASTEBIN.tag() + "nAinUn1h");
+        saveToHistory("JCR8YTww", LocationHandler.PASTEBIN.tag());
+        saveToHistory("6gyLvm4K", LocationHandler.PASTEBIN.tag());
+        saveToHistory("nAinUn1h", LocationHandler.PASTEBIN.tag());
 
 		for (int i = 0; i < 50; i++) {
 			final String s = this.prefs.get(Strings.PREFS_GUI_MEMORY + i, "null");
 
-			if (!s.equals("null")) {
-				locSet.add(s);
+			if (!s.equals("null") && s.indexOf(':') != -1) {
+                int index = s.indexOf(':') + 1;
+                String tag = s.substring(0, index);
+                String main = s.substring(index);
+				saveToHistory(main, tag);
 			}
 		}
-
-        locations.addAll(locSet);
 	}
 
 	private void showError(String message) {
@@ -474,10 +481,20 @@ public class FXAutotyperWindow extends Application {
 		FXOptionPane.showMessage(this.primaryStage, "Autotyper Message", message, IconType.INFO);
 	}
 
-	private void saveToHistory(String loc, String tag) {
-		if (!this.locations.contains(tag + loc))
+    private static final HashFunction hf = Hashing.murmur3_32();
+    private Set<HashCode> locationHashes = Sets.newHashSet();
+	private boolean saveToHistory(String loc, String tag) {
+        HashCode hash = hf.newHasher().putString(loc, Charsets.UTF_8).hash();
+        Console.debug("Location '" + loc + "' hashed to '" + hash.toString() + "', New? = " + !locationHashes.contains(hash));
+
+		if (!this.locationHashes.contains(hash)) {
             this.locations.add(tag + loc);
-	}
+            this.locationHashes.add(hash);
+            return true;
+        }
+
+        return false;
+    }
 
 	private void obtainKeyboard() {
 		if (FXGuiUtils.isFXRobotAvailable()) {

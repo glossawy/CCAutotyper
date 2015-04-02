@@ -1,11 +1,10 @@
 package com.mattc.autotyper.gui.fx;
 
-import java.util.List;
-
-import javafx.scene.control.ListView;
-
 import com.mattc.autotyper.meta.FXCompatible;
 import com.mattc.autotyper.meta.SwingCompatible;
+import javafx.scene.control.ListView;
+
+import java.util.List;
 
 /**
  * A JavaFX Control that can handle AutoCompletion input. Typically a Text Control.
@@ -44,13 +43,13 @@ public interface AutoCompleteControl<T> {
 	 * 
 	 * @param max
 	 */
-	void setMaxLength(int max);
+	void setMaxResults(int max);
 
 	/**
 	 * Get Max Auto Complete Data Count
 	 * 
 	 * @return
 	 */
-	int getMaxLength();
+	int getMaxResults();
 
 }

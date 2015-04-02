@@ -2,6 +2,9 @@ package com.mattc.autotyper;
 
 import java.io.File;
 
+/**
+ * Simple Parameter Definition Wrapper
+ */
 public class Parameters {
 
 	public static final int DEFAULT_WAIT = 5000;

@@ -1,24 +1,13 @@
 package com.mattc.autotyper.util;
- 
-import java.io.File; 
-import java.io.FileNotFoundException;
-import java.io.FilenameFilter;
-import java.io.IOException;
-import java.io.PrintStream;
+
+import com.google.common.base.Strings;
+import org.apache.log4j.*;
+import org.joda.time.DateTime;
+
+import java.io.*;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.regex.Pattern;
-
-import org.apache.log4j.Appender;
-import org.apache.log4j.ConsoleAppender;
-import org.apache.log4j.EnhancedPatternLayout;
-import org.apache.log4j.Layout;
-import org.apache.log4j.Level;
-import org.apache.log4j.Logger;
-import org.apache.log4j.RollingFileAppender;
-import org.joda.time.DateTime;
-
-import com.google.common.base.Strings;
 
 /**
  * A Centralized Logging utility utilizing Log4j. <br />

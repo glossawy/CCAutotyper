@@ -1,11 +1,11 @@
 package com.mattc.autotyper.gui.fx;
 
-import static com.mattc.autotyper.gui.fx.FXGuiUtils.makeAlwaysOnTop;
-
-import java.io.File;
-import java.io.IOException;
-import java.util.prefs.Preferences;
-
+import com.mattc.autotyper.Strings;
+import com.mattc.autotyper.meta.FXCompatible;
+import com.mattc.autotyper.meta.ModeParser;
+import com.mattc.autotyper.meta.ModeParser.Mode;
+import com.mattc.autotyper.util.Console;
+import com.mattc.autotyper.util.IOUtils;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
 import javafx.collections.FXCollections;
@@ -29,12 +29,11 @@ import javafx.stage.Stage;
 import javafx.stage.StageStyle;
 import javafx.stage.Window;
 
-import com.mattc.autotyper.Strings;
-import com.mattc.autotyper.meta.FXCompatible;
-import com.mattc.autotyper.meta.ModeParser;
-import com.mattc.autotyper.meta.ModeParser.Mode;
-import com.mattc.autotyper.util.Console;
-import com.mattc.autotyper.util.IOUtils;
+import java.io.File;
+import java.io.IOException;
+import java.util.prefs.Preferences;
+
+import static com.mattc.autotyper.gui.fx.FXGuiUtils.makeAlwaysOnTop;
 
 @FXCompatible
 public class FXConfirmDialog extends Stage {

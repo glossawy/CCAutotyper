@@ -1,10 +1,9 @@
 package com.mattc.autotyper.meta;
 
-import java.awt.Component;
-import java.awt.EventQueue;
-
 import javafx.application.Platform;
 import javafx.scene.Node;
+
+import java.awt.*;
 
 public class CompatCheck {
 

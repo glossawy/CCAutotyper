@@ -16,17 +16,17 @@
  */
 package com.mattc.autotyper.util;
 
-import java.util.Map;
-import java.util.Set;
-
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Maps;
 
+import java.util.Map;
+import java.util.Set;
+
 /**
  * Small Utility to Determine OS and OS Architecture based on an enumeration of
  * supported OS's and Architectures. Plus other utilities.
- * 
+ *
  * @author Matthew Crocco
  */
 public final class OS {
@@ -40,7 +40,7 @@ public final class OS {
 	 * <br />
 	 * Currently this class only deals with 64-bit Integer Values (Although 32-bit
 	 * Integers can be used).
-	 * 
+	 *
 	 * @author Matthew
 	 */
 	public enum MemoryUnit {
@@ -350,7 +350,7 @@ public final class OS {
 
 		/**
 		 * Convert to Bytes
-		 * 
+		 *
 		 * @param amt
 		 * @return
 		 */
@@ -360,7 +360,7 @@ public final class OS {
 
 		/**
 		 * Convert to Kilobytes (1000 Bytes or 10^3 Bytes)
-		 * 
+		 *
 		 * @param amt
 		 * @return
 		 */
@@ -370,7 +370,7 @@ public final class OS {
 
 		/**
 		 * Convert to Kibibytes (1024 Bytes or 2^10 Bytes)
-		 * 
+		 *
 		 * @param amt
 		 * @return
 		 */
@@ -380,7 +380,7 @@ public final class OS {
 
 		/**
 		 * Convert to Megabytes (1000 Kilobytes or 10^6 Bytes)
-		 * 
+		 *
 		 * @param amt
 		 * @return
 		 */
@@ -390,7 +390,7 @@ public final class OS {
 
 		/**
 		 * Convert to Mebibytes (1024 Kibibytes or 2^20 Bytes)
-		 * 
+		 *
 		 * @param amt
 		 * @return
 		 */
@@ -400,7 +400,7 @@ public final class OS {
 
 		/**
 		 * Convert to Gigabytes (1000 Megabytes or 10^9 Bytes)
-		 * 
+		 *
 		 * @param amt
 		 * @return
 		 */
@@ -410,7 +410,7 @@ public final class OS {
 
 		/**
 		 * Convert to Gibibytes (1024 Mebibytes or 2^30 Bytes)
-		 * 
+		 *
 		 * @param amt
 		 * @return
 		 */
@@ -420,7 +420,7 @@ public final class OS {
 
 		/**
 		 * Convert source unit to this unit.
-		 * 
+		 *
 		 * @param amt
 		 * @param source
 		 * @return
@@ -432,7 +432,7 @@ public final class OS {
 		/**
 		 * The appropriate tag for the Unit of Memory Storage, e.g., MB, MiB, GiB,
 		 * GB, etc.
-		 * 
+		 *
 		 * @return
 		 */
 		public String getTag() {
@@ -476,9 +476,9 @@ public final class OS {
 		}
 	}
 
-	public static final OS WINDOWS = new OS(".exe", new String[] { "win", "windows" });
-	public static final OS UNIX = new OS("", new String[] { "lin", "linux", "nux" });
-	public static final OS UNSUPPORTED = new OS("", new String[] {});
+	public static final OS WINDOWS = new OS(".exe", "win", "windows");
+	public static final OS UNIX = new OS("", "lin", "linux", "nux");
+	public static final OS UNSUPPORTED = new OS("");
 
 	private static final Map<OS, String> nameLookup = Maps.newHashMap();
 
@@ -517,7 +517,7 @@ public final class OS {
 
 	/**
 	 * Get this System OS
-	 * 
+	 *
 	 * @return
 	 */
 	public static OS get() {
@@ -537,7 +537,7 @@ public final class OS {
 	 * A 32-bit JVM can be run on a 64-bit Computer. <br />
 	 * <br />
 	 * To get the Computer Architecture, use {@link #getArch()}.
-	 * 
+	 *
 	 * @return JVM Architecture (x86/x64)
 	 */
 	public static Bit getArchJVM() {
@@ -555,7 +555,7 @@ public final class OS {
 	 * this means that the COMPUTER may be 64 bit, but may be running a 32 bit JVM.
 	 * To get <br />
 	 * the JVM Bitness, use {@link #getArchJVM()}.
-	 * 
+	 *
 	 * @return Actual Architecture of the Computer (x86 or x64)
 	 */
 	public static Bit getArch() {

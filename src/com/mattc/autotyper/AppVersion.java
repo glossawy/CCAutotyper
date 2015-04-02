@@ -1,18 +1,19 @@
 package com.mattc.autotyper;
 
+/**
+ * Extremely Simple Application Version Comparison
+ */
 public final class AppVersion {
 
     private AppVersion() {
+        // DO NOT INSTANTIATE
     }
-
-    public static final String NAME = Ref.TITLE;
-    public static final String VERSION = Ref.VERSION;
 
     public static final int MAJOR, MINOR, REVISION;
 
     static {
         try {
-            final String[] parts = VERSION.split("\\.");
+            final String[] parts = Ref.VERSION.split("\\.");
             MAJOR = parts.length < 1 ? 0 : Integer.parseInt(parts[0]);
             MINOR = parts.length < 2 ? 0 : Integer.parseInt(parts[1]);
             REVISION = parts.length < 3 ? 0 : Integer.parseInt(parts[2]);

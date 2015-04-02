@@ -1,72 +1,6 @@
 package com.mattc.autotyper.robot;
 
-import static java.awt.event.KeyEvent.VK_0;
-import static java.awt.event.KeyEvent.VK_1;
-import static java.awt.event.KeyEvent.VK_2;
-import static java.awt.event.KeyEvent.VK_3;
-import static java.awt.event.KeyEvent.VK_4;
-import static java.awt.event.KeyEvent.VK_5;
-import static java.awt.event.KeyEvent.VK_6;
-import static java.awt.event.KeyEvent.VK_7;
-import static java.awt.event.KeyEvent.VK_8;
-import static java.awt.event.KeyEvent.VK_9;
-import static java.awt.event.KeyEvent.VK_A;
-import static java.awt.event.KeyEvent.VK_B;
-import static java.awt.event.KeyEvent.VK_BACK_QUOTE;
-import static java.awt.event.KeyEvent.VK_BACK_SLASH;
-import static java.awt.event.KeyEvent.VK_C;
-import static java.awt.event.KeyEvent.VK_CLOSE_BRACKET;
-import static java.awt.event.KeyEvent.VK_COMMA;
-import static java.awt.event.KeyEvent.VK_D;
-import static java.awt.event.KeyEvent.VK_E;
-import static java.awt.event.KeyEvent.VK_ENTER;
-import static java.awt.event.KeyEvent.VK_EQUALS;
-import static java.awt.event.KeyEvent.VK_F;
-import static java.awt.event.KeyEvent.VK_G;
-import static java.awt.event.KeyEvent.VK_H;
-import static java.awt.event.KeyEvent.VK_I;
-import static java.awt.event.KeyEvent.VK_J;
-import static java.awt.event.KeyEvent.VK_K;
-import static java.awt.event.KeyEvent.VK_L;
-import static java.awt.event.KeyEvent.VK_M;
-import static java.awt.event.KeyEvent.VK_MINUS;
-import static java.awt.event.KeyEvent.VK_N;
-import static java.awt.event.KeyEvent.VK_O;
-import static java.awt.event.KeyEvent.VK_OPEN_BRACKET;
-import static java.awt.event.KeyEvent.VK_P;
-import static java.awt.event.KeyEvent.VK_PERIOD;
-import static java.awt.event.KeyEvent.VK_Q;
-import static java.awt.event.KeyEvent.VK_QUOTE;
-import static java.awt.event.KeyEvent.VK_R;
-import static java.awt.event.KeyEvent.VK_S;
-import static java.awt.event.KeyEvent.VK_SEMICOLON;
-import static java.awt.event.KeyEvent.VK_SHIFT;
-import static java.awt.event.KeyEvent.VK_SLASH;
-import static java.awt.event.KeyEvent.VK_SPACE;
-import static java.awt.event.KeyEvent.VK_T;
-import static java.awt.event.KeyEvent.VK_TAB;
-import static java.awt.event.KeyEvent.VK_U;
-import static java.awt.event.KeyEvent.VK_V;
-import static java.awt.event.KeyEvent.VK_W;
-import static java.awt.event.KeyEvent.VK_X;
-import static java.awt.event.KeyEvent.VK_Y;
-import static java.awt.event.KeyEvent.VK_Z;
-
-import java.awt.Dimension;
-import java.awt.Toolkit;
-import java.awt.event.KeyEvent;
-import java.io.ByteArrayInputStream;
-import java.io.File;
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Paths;
-import java.util.List;
-
-import javax.imageio.ImageIO;
-
-import org.jnativehook.keyboard.NativeKeyEvent;
-
+import com.google.common.collect.Queues;
 import com.mattc.autotyper.Autotyper;
 import com.mattc.autotyper.meta.FXCompatible;
 import com.mattc.autotyper.util.Console;
@@ -75,6 +9,20 @@ import com.mattc.autotyper.util.OS.MemoryUnit;
 import com.sun.glass.ui.Application;
 import com.sun.glass.ui.Pixels;
 import com.sun.glass.ui.Robot;
+import org.jnativehook.keyboard.NativeKeyEvent;
+
+import javax.imageio.ImageIO;
+import java.awt.*;
+import java.io.ByteArrayInputStream;
+import java.io.File;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.util.List;
+import java.util.Queue;
+
+import static java.awt.event.KeyEvent.*;
 
 /**
  * A JavaFX integrated Auto-Keyboard that uses the sun glass API that FX uses.
@@ -91,6 +39,8 @@ public class FXKeyboard implements Keyboard {
 	private volatile boolean alt = false;
 	private volatile boolean bspace = false;
 	private volatile boolean keypressed = false;
+
+    private Queue<Integer> schedule = Queues.newConcurrentLinkedQueue();
 
 	public FXKeyboard(int delay) {
 		this.delay = delay;
@@ -412,7 +362,12 @@ public class FXKeyboard implements Keyboard {
 			while ((this.mode == KeyboardMode.PAUSED) || this.alt) {
 				IOUtils.sleep(200);
 			}
+
+            while(!schedule.isEmpty())
+                doType(schedule.remove());
+
 			if (this.mode == KeyboardMode.INACTIVE) {
+                schedule.clear();
 				break;
 			}
 
@@ -454,9 +409,15 @@ public class FXKeyboard implements Keyboard {
 					while ((this.mode == KeyboardMode.PAUSED) || this.alt) {
 						IOUtils.sleep(200);
 					}
-					if (this.mode == KeyboardMode.INACTIVE) {
-						break outer;
+
+                    while(!schedule.isEmpty())
+                        doType(schedule.remove());
+
+                    if (this.mode == KeyboardMode.INACTIVE) {
+						schedule.clear();
+                        break outer;
 					}
+
 					type(c);
 				}
 				
@@ -519,8 +480,12 @@ public class FXKeyboard implements Keyboard {
 				break;
 			}
 		} else if (this.alt && (e.getKeyChar() == 's')) {
+            if(this.mode == KeyboardMode.PAUSED)
+                schedule.add(VK_BACK_SPACE);
+
 			// Terminate Current Session for Alt + S
 			this.mode = KeyboardMode.INACTIVE;
+            schedule.add(VK_BACK_SPACE);
 			this.alt = false;
 		}
 
@@ -539,12 +504,13 @@ public class FXKeyboard implements Keyboard {
 			// Alt + P will print P in computer craft, this deletes the P
 			// if the user did not.
 			if (!this.bspace && this.keypressed) {
-				doType(KeyEvent.VK_BACK_SPACE);
+                schedule.add(VK_BACK_SPACE);
 			} else {
 				this.bspace = false;
 			}
 
-			doType(KeyEvent.VK_BACK_SPACE);
+            if(this.keypressed)
+                schedule.add(VK_BACK_SPACE);
 		}
 	}
 
@@ -588,9 +554,9 @@ public class FXKeyboard implements Keyboard {
 	private void doType(int[] codes, int offset, int length) {
 		if (length == 0) return;
 
-		this.robo.keyPress(codes[offset]);
-		doType(codes, offset + 1, length - 1);
-		this.robo.keyRelease(codes[offset]);
+        this.robo.keyPress(codes[offset]);
+        doType(codes, offset + 1, length - 1);
+        this.robo.keyRelease(codes[offset]);
 	}
 
 }

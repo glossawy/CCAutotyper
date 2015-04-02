@@ -1,5 +1,15 @@
 package com.mattc.autotyper.meta;
 
+import com.google.common.collect.BiMap;
+import com.google.common.collect.HashBiMap;
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Lists;
+import com.google.common.reflect.ClassPath;
+import com.google.common.reflect.ClassPath.ClassInfo;
+import com.mattc.autotyper.util.Console;
+import javafx.scene.Node;
+import javafx.scene.control.*;
+
 import java.io.IOException;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
@@ -7,19 +17,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
 
-import com.google.common.collect.*;
-import javafx.scene.Node;
-import javafx.scene.control.Button;
-import javafx.scene.control.ComboBox;
-import javafx.scene.control.Label;
-import javafx.scene.control.TextField;
-import javafx.scene.control.ToggleButton;
-
-import com.google.common.reflect.ClassPath;
-import com.google.common.reflect.ClassPath.ClassInfo;
-import com.mattc.autotyper.util.Console;
-
-@InDev(sinceVersion = 2.0, lastUpdate = 2.0, author = "Matthew Crocco")
 @FXCompatible
 public class NodeParser {
 

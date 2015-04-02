@@ -1,22 +1,23 @@
 package com.mattc.autotyper;
 
+import com.mattc.autotyper.util.Console;
+
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.MalformedURLException;
 import java.net.URL;
 
-import com.mattc.autotyper.util.Console;
-
 /**
  * Enumerates all Strings used in this Program that should be altered. <br />
  * <br />
  * Could possibly be used for Localization in the future. [Localization Keys]
- * 
+ *
  * @author Matthew
  */
 public class Strings {
 
+    /** GitHub URL to open when the 'info' button is pressed */
 	public static final String GITHUB_URL = "https://github.com/Matt529/CCAutotyper/blob/master/README.md";
 
 	public static final String FLAG_GUI = "gui";
@@ -29,11 +30,16 @@ public class Strings {
 
 	public static final String EXAMPLE_EXECUTION = "java -jar ccautotyper.jar paste JCR8YTww -inDelay 10 -wait 5";
 
+    /** Ghost Text to Display in TextField when File Button Selected */
 	public static final String GHOST_TEXT_FSELECT = "Relative or Absolute File Path";
+    /** Ghost Text to Display in TextField when URL Button Selected */
 	public static final String GHOST_TEXT_USELECT = "Valid HTTP URL to Downloadable File";
+    /** Ghost Text to Display in TextField when Pastebin Button Selected */
 	public static final String GHOST_TEXT_PSELECT = "Valid Pastebin File Code";
+    /** Ghost Text to Display in TextField when Auto Button Selected */
 	public static final String GHOST_TEXT_ASELECT = "File Path, HTTP URL or Pastebin File Code";
 
+    // Preferences Keys
 	public static final String PREFS_GUI_VERSION = "app_version";
     public static final String PREFS_GUI_WAIT = "wait_time";
 	public static final String PREFS_GUI_INPUTDELAY = "input_delay";
@@ -45,9 +51,11 @@ public class Strings {
 
 	public static final String PREFS_GUI_CONFIRM = "do_confirm_file";
 
+    /** Creates Resource objects that represent the URL and Stream of various media */
 	public static final class Resources {
 		public static final String LICENSE = "com/mattc/autotyper/license";
 
+        /** Get CSS File Resource found in com/mattc/autotyper/gui/fx/css package*/
 		public static final Resource getCSS(final String name) {
 			return new Resource() {
 
@@ -58,6 +66,7 @@ public class Strings {
 			};
 		}
 
+        /** Get Image File found in the res package. NOT FOR LOCAL FILES. */
 		public static Resource getImage(final String name) {
 			return new Resource() {
 
@@ -68,6 +77,7 @@ public class Strings {
 			};
 		}
 
+        /** Get Arbitrary File in relative to Root Directory*/
 		public static Resource getRootFile(final String name) {
 			return new Resource() {
 				@Override
@@ -82,6 +92,7 @@ public class Strings {
 			};
 		}
 
+        /** Container for URL and Streams */
 		public static abstract class Resource {
 			public abstract URL url();
 

@@ -1,7 +1,5 @@
 package com.mattc.autotyper.gui;
 
-import com.google.common.annotations.Beta;
-
 /**
  * A (possibly temporary) simple interface to handle multiple types of GUIs and their
  * being unrelated to each other in any way. This allows a single common interface in
@@ -11,7 +9,6 @@ import com.google.common.annotations.Beta;
  * @author Matthew
  *
  */
-@Beta
 public interface GuiAccessor {
 
 	void doShow();

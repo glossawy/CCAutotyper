@@ -1,9 +1,9 @@
 package com.mattc.autotyper.robot;
 
+import org.jnativehook.keyboard.NativeKeyListener;
+
 import java.io.File;
 import java.io.IOException;
-
-import org.jnativehook.keyboard.NativeKeyListener;
 
 /**
  * A Common Interface for any Keyboard Implementations.
@@ -33,7 +33,7 @@ public interface Keyboard extends NativeKeyListener {
 		/** Is Not Typing & Is In An Active Session */
 		PAUSED,
 		/** Is Not Typing & Is Not In An Active Session */
-		INACTIVE;
+		INACTIVE
 	}
 
 	/**

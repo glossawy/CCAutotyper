@@ -1,8 +1,8 @@
 package com.mattc.autotyper.gui;
 
-import java.io.IOException;
-
 import com.google.common.io.LineProcessor;
+
+import java.io.IOException;
 
 public class SingleStringProcessor implements LineProcessor<String> {
 

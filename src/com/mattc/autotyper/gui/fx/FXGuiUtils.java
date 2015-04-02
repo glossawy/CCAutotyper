@@ -1,7 +1,5 @@
 package com.mattc.autotyper.gui.fx;
 
-import java.util.Comparator;
-
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
 import javafx.collections.FXCollections;
@@ -18,6 +16,8 @@ import javafx.scene.control.ToggleGroup;
 import javafx.scene.input.KeyEvent;
 import javafx.stage.Stage;
 import javafx.stage.Window;
+
+import java.util.Comparator;
 
 public class FXGuiUtils {
 
@@ -76,8 +76,12 @@ public class FXGuiUtils {
 		return arr.length;
 	}
 
+    // TODO MOve out of Utils and into a separate selector class. Use Java 8 Function Interfaces?
 	public static ObservableList<String> selectCompletionCandidates(final ObservableList<String> data, String base, boolean sort) {
-		ObservableList<StringWrapper> wrappers = FXCollections.observableArrayList();
+		if(base.isEmpty())
+            return FXCollections.observableArrayList(data);
+
+        ObservableList<StringWrapper> wrappers = FXCollections.observableArrayList();
 		final ObservableList<String> candidates = FXCollections.observableArrayList();
 
 		for (final String s : data) {
@@ -126,14 +130,16 @@ public class FXGuiUtils {
 	private static class StringWrapper implements AutoCompleteObject<StringWrapper> {
 
 		private final String str;
+        private final String compStr;
 
 		private StringWrapper(String str) {
 			this.str = str;
+            this.compStr = str.toLowerCase();
 		}
 
 		@Override
 		public boolean isValidCandidate(StringWrapper base) {
-			return base.str.startsWith(this.str);
+            return base.compStr.contains(this.compStr);
 		}
 
 		@Override

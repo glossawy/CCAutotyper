@@ -1,17 +1,13 @@
 package com.mattc.autotyper.gui;
 
+import com.mattc.autotyper.Downloader;
+import com.mattc.autotyper.meta.*;
+
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
-
-import com.mattc.autotyper.Downloader;
-import com.mattc.autotyper.meta.ExceptionHandler;
-import com.mattc.autotyper.meta.FXCompatible;
-import com.mattc.autotyper.meta.ImpossibleInputException;
-import com.mattc.autotyper.meta.InformedOutcome;
-import com.mattc.autotyper.meta.SwingCompatible;
 
 /**
  * Handles downloading and obtaining files from different locations on different
@@ -32,14 +28,14 @@ public enum LocationHandler {
 		}
 
 		@Override
-		public InformedOutcome canHandle(String text) {
+		public Outcome canHandle(String text) {
 			final File f = new File(text);
 			final String reason = String.format("File not found at '%s'!", text);
 
 			if (f.exists())
-				return InformedOutcome.createSuccess();
+				return Outcome.createSuccess();
 			else
-				return new InformedOutcome(this, reason, false, new FileNotFoundException(reason));
+				return new Outcome(this, reason, false, new FileNotFoundException(reason));
 		}
 	},
 	URL ("Web URL:") {
@@ -54,7 +50,7 @@ public enum LocationHandler {
 		}
 
 		@Override
-		public InformedOutcome canHandle(String text) {
+		public Outcome canHandle(String text) {
 			try {
 				final java.net.URL url = new java.net.URL(text);
 				final HttpURLConnection con = (HttpURLConnection) url.openConnection();
@@ -64,13 +60,13 @@ public enum LocationHandler {
 				con.disconnect();
 
 				if (response == 200)
-					return InformedOutcome.createSuccess();
+					return Outcome.createSuccess();
 				else
 					throw new IOException("Web Response was not 200 (Success). It was " + response + "!");
 			} catch (final MalformedURLException e) {
-				return new InformedOutcome(this, text + " is an invalid URL!", false, e);
+				return new Outcome(this, text + " is an invalid URL!", false, e);
 			} catch (final IOException e) {
-				return new InformedOutcome(this, "Connection Failure: " + text, false, e);
+				return new Outcome(this, "Connection Failure: " + text, false, e);
 			}
 		}
 	},
@@ -81,7 +77,7 @@ public enum LocationHandler {
 		}
 
 		@Override
-		public InformedOutcome canHandle(String text) {
+		public Outcome canHandle(String text) {
 			final String urlStr = String.format(Downloader.PASTEBIN_URL, text);
 			try {
 				final java.net.URL url = new java.net.URL(urlStr);
@@ -92,13 +88,13 @@ public enum LocationHandler {
 				con.disconnect();
 
 				if (response == 200)
-					return InformedOutcome.createSuccess();
+					return Outcome.createSuccess();
 				else
 					throw new IOException("Web Response was not 200 (Success). It was " + response + "!");
 			} catch (final MalformedURLException e) {
-				return new InformedOutcome(this, "Bad URL: " + urlStr, false, e);
+				return new Outcome(this, "Bad URL: " + urlStr, false, e);
 			} catch (final IOException e) {
-				return new InformedOutcome(this, "Connection Failure: " + urlStr, false, e);
+				return new Outcome(this, "Connection Failure: " + urlStr, false, e);
 			}
 		}
 	};
@@ -119,12 +115,12 @@ public enum LocationHandler {
 
 	/**
 	 * Take Location and determine if it can be handled by this LocationHandler.
-	 * Return an {@link InformedOutcome} object as appropriate.
+	 * Return an {@link com.mattc.autotyper.meta.Outcome} object as appropriate.
 	 * 
 	 * @param text
 	 * @return
 	 */
-	abstract public InformedOutcome canHandle(String text);
+	abstract public Outcome canHandle(String text);
 
     public String tag() {
         return tag;
@@ -145,7 +141,7 @@ public enum LocationHandler {
             if(text.startsWith(lh.tag))
                 return lh;
 
-			final InformedOutcome out = lh.canHandle(text);
+			final Outcome out = lh.canHandle(text);
 
 			if (out.isSuccess())
 				return lh;

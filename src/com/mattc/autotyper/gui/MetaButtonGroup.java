@@ -1,14 +1,11 @@
 package com.mattc.autotyper.gui;
 
-import java.util.Enumeration;
-import java.util.Map;
-
-import javax.swing.AbstractButton;
-import javax.swing.ButtonGroup;
-import javax.swing.ButtonModel;
-
 import com.google.common.collect.Maps;
 import com.mattc.autotyper.meta.SwingCompatible;
+
+import javax.swing.*;
+import java.util.Enumeration;
+import java.util.Map;
 
 // TODO Rewrite and Deprecate. Delegate this role to a more effective design.
 /**

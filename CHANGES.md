@@ -2,6 +2,34 @@ CCAutotyper [![Build Status](https://travis-ci.org/Matt529/CCAutotyper.svg)](htt
 ===========
 An Autotyper for ComputerCraft players who use servers that have HTTP Disabled!
 
+###v2.1.0 to v2.1.1 (too few visible changes to warrant a minor update)
+---
+####**[Noticeable]**
+- General improvements to AutoCompletion (All those things stated in last update now actually work)
+- Alt, Alt-P and Alt-S were broken at some stage in my last cleanup, now they work as expected
+- Updating to New Versions now cause all Preferences to be overwritten to avoid incompatible KV Pairs
+ * This means that the new version will not remember your previous settings at all
+- AutoCompletion no longer does a prefix lookup, now it searches for any occurrence at any point in the result.
+ * i.e. Typing 'ste' will return all 'Pastebin' results since 'ste' appears in the middle of Pastebin
+
+####**[Codebase]**
+- Continued Cleanup and Conversion to clean Java 8 Functional Idioms
+- The 'caused' flag no longer does anything in AutoCompleteTextField, that was replaced with a Key EventHandler and Mouse EventHandler attached to the ListView
+- AutoCompleteTextField is just generally nicer to read since more procedures have been moved to their own methods
+- SwingKeyboard and FXKeyboard now implement a Queue to allow interaction with the JNativeHooks Dispatch Thread
+- More To-Do's as clean-up continues. Might repalce AutoCompletion with ControlsFX. Why re-invent the wheel?
+- AutoCompletion requires a re-structuring or removal, it is not very plug-and-play. (too few interfaces)
+- Continued attempts to remove Static Variables and the horrible Singleton Pattern... 
+- Removed useless @InDev annotation, Renamed InformedOutcome to Outcome, Other Renamings (see commit)
+- Moved all popup.show() calls to AutoCompleteTextField.showPopup(), same for popup.hide() and hidePopup()
+- All calls in FXAutotyperWindow from AutoCompeleteTextField.addData are filtered through saveToHistory now
+ * Prevents Duplicate Entries in AutoCompleteTextField
+- Checking if a location already is saved is now done through Google Commons' Hashing Functions
+- Continued Documentation Effort
+
+
+---
+
 ###v2.0a to v2.1.0
 ---
 ####**[Primary]**

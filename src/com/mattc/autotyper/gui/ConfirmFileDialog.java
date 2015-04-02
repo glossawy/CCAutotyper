@@ -1,7 +1,15 @@
 package com.mattc.autotyper.gui;
 
-import java.awt.Font;
-import java.awt.GridLayout;
+import com.google.common.io.Files;
+import com.mattc.autotyper.meta.FXCompatible;
+import com.mattc.autotyper.meta.SwingCompatible;
+import com.mattc.autotyper.util.Console;
+import org.fife.ui.rsyntaxtextarea.RSyntaxTextArea;
+import org.fife.ui.rsyntaxtextarea.SyntaxConstants;
+import org.fife.ui.rtextarea.RTextScrollPane;
+
+import javax.swing.*;
+import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.ItemEvent;
@@ -10,26 +18,6 @@ import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Field;
 import java.nio.charset.StandardCharsets;
-
-import javax.swing.BoxLayout;
-import javax.swing.JButton;
-import javax.swing.JComboBox;
-import javax.swing.JDialog;
-import javax.swing.JFrame;
-import javax.swing.JLabel;
-import javax.swing.JPanel;
-import javax.swing.ScrollPaneConstants;
-import javax.swing.SwingConstants;
-import javax.swing.WindowConstants;
-
-import org.fife.ui.rsyntaxtextarea.RSyntaxTextArea;
-import org.fife.ui.rsyntaxtextarea.SyntaxConstants;
-import org.fife.ui.rtextarea.RTextScrollPane;
-
-import com.google.common.io.Files;
-import com.mattc.autotyper.meta.FXCompatible;
-import com.mattc.autotyper.meta.SwingCompatible;
-import com.mattc.autotyper.util.Console;
 
 /**
  * Takes in Code or a Code File and displays the text in a TextArea with a
@@ -42,8 +30,6 @@ import com.mattc.autotyper.util.Console;
 @FXCompatible
 @SwingCompatible
 public class ConfirmFileDialog extends JDialog {
-
-	// TODO make Builder as per FXConfirmDialog
 
 	private static final long serialVersionUID = -5039462697501272483L;
 

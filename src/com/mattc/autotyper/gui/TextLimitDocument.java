@@ -1,10 +1,10 @@
 package com.mattc.autotyper.gui;
 
+import com.mattc.autotyper.meta.SwingCompatible;
+
 import javax.swing.text.AttributeSet;
 import javax.swing.text.BadLocationException;
 import javax.swing.text.PlainDocument;
-
-import com.mattc.autotyper.meta.SwingCompatible;
 
 /**
  * A Document designed to set a character limit on Text Input Components (e.g.

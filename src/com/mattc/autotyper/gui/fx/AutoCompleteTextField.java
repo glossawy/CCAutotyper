@@ -1,14 +1,13 @@
 package com.mattc.autotyper.gui.fx;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.atomic.AtomicBoolean;
-
+import com.google.common.collect.Lists;
+import com.mattc.autotyper.meta.FXCompatible;
+import com.mattc.autotyper.meta.FXParseable;
+import com.mattc.autotyper.util.Console;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
-import javafx.event.Event;
 import javafx.event.EventHandler;
 import javafx.event.EventType;
 import javafx.geometry.Point2D;
@@ -17,23 +16,23 @@ import javafx.scene.control.SelectionMode;
 import javafx.scene.control.TextField;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
+import javafx.scene.input.MouseButton;
 import javafx.scene.input.MouseEvent;
 import javafx.stage.Popup;
 import javafx.stage.Stage;
 
-import com.google.common.collect.Lists;
-import com.mattc.autotyper.meta.FXCompatible;
-import com.mattc.autotyper.meta.FXParseable;
-import com.mattc.autotyper.meta.InDev;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 
+// TODO Consider transferring to ControlsFX for AutoCompletion or re-working this framework to be more useful
 /**
  * A TextField that handles AutoCompletion
- * 
+ *
  * @author Matthew
  */
 @FXCompatible
 @FXParseable("%at")
-@InDev(sinceVersion = 2.0, lastUpdate = 2.0, author = "Matthew Crocco")
 public class AutoCompleteTextField extends TextField implements AutoCompleteControl<String> {
 
 	private final AtomicBoolean caused = new AtomicBoolean(false);
@@ -55,46 +54,42 @@ public class AutoCompleteTextField extends TextField implements AutoCompleteCont
 		this.popup = new Popup();
 		this.popup.getContent().add(this.listView);
 
-		this.addEventHandler(MouseEvent.MOUSE_CLICKED, new EventHandler<MouseEvent>() {
+        this.addEventHandler(MouseEvent.MOUSE_CLICKED, (event) -> {
+            if (AutoCompleteTextField.this.popup.isShowing()) {
+                AutoCompleteTextField.this.hidePopup();
+            }
+        });
 
-			@Override
-			public void handle(MouseEvent event) {
-				if (AutoCompleteTextField.this.popup.isShowing()) {
-					AutoCompleteTextField.this.popup.hide();
-				}
-			}
+        this.addEventFilter(EventType.ROOT, (event) -> {
+            if (event instanceof KeyEvent) {
+                final KeyEvent evt = (KeyEvent) event;
+                if ((evt.getCode() == KeyCode.SPACE) && evt.isControlDown()) {
+                    if(!AutoCompleteTextField.this.isPopupShowing()) {
+                        organizeData(getText().trim());
+                        showPopup();
+                    }
 
-		});
+                    setSelection(0);
+                } else if ((evt.getCode() == KeyCode.ESCAPE) && AutoCompleteTextField.this.popup.isShowing()) {
+                    AutoCompleteTextField.this.hidePopup();
+                    evt.consume();
+                }
+            }
+        });
 
-		this.addEventHandler(EventType.ROOT, new EventHandler<Event>() {
+        textProperty().addListener(new ChangeListener<String>() {
 
-			@Override
-			public void handle(Event event) {
-				if (event instanceof KeyEvent) {
-					final KeyEvent evt = (KeyEvent) event;
-					if ((evt.getCode() == KeyCode.SPACE) && evt.isControlDown()) {
-						showPopup();
-					} else if ((evt.getCode() == KeyCode.ESCAPE) && AutoCompleteTextField.this.popup.isShowing()) {
-						AutoCompleteTextField.this.popup.hide();
-					}
-				}
-			}
+            @Override
+            public void changed(ObservableValue<? extends String> observable, String oldValue, String newValue) {
+                final String text = newValue;
 
-		});
-
-		textProperty().addListener(new ChangeListener<String>() {
-
-			@Override
-			public void changed(ObservableValue<? extends String> observable, String oldValue, String newValue) {
-				final String text = newValue;
-
-				if (!text.trim().isEmpty() && (getScene() != null)) {
-					AutoCompleteTextField.this.listView.setItems(FXGuiUtils.selectCompletionCandidates(AutoCompleteTextField.this.data, text, true));
-					if (!isPopupShowing() && AutoCompleteTextField.this.listView.getItems().size() > 0) {
-						showPopup();
-					}
-				} else if (AutoCompleteTextField.this.popup.isShowing() && text.trim().isEmpty()) {
-					AutoCompleteTextField.this.popup.hide();
+                if (!text.trim().isEmpty() && (getScene() != null)) {
+                    organizeData(text);
+                    if (!isPopupShowing() && AutoCompleteTextField.this.listView.getItems().size() > 0) {
+                        showPopup();
+                    }
+                } else if (AutoCompleteTextField.this.popup.isShowing() && text.trim().isEmpty()) {
+					AutoCompleteTextField.this.hidePopup();
 				}
 			}
 
@@ -114,61 +109,41 @@ public class AutoCompleteTextField extends TextField implements AutoCompleteCont
 		});
 
 		widthProperty().addListener(new ChangeListener<Number>() {
-			@Override
-			public void changed(ObservableValue<? extends Number> observable, Number oldValue, Number newValue) {
-				AutoCompleteTextField.this.listView.setPrefWidth(newValue.doubleValue());
-			}
-		});
+            @Override
+            public void changed(ObservableValue<? extends Number> observable, Number oldValue, Number newValue) {
+                AutoCompleteTextField.this.listView.setPrefWidth(newValue.doubleValue());
+            }
+        });
 
 		this.listView.setPrefHeight(200);
 		this.listView.getSelectionModel().setSelectionMode(SelectionMode.SINGLE);
-		this.listView.getSelectionModel().selectedItemProperty().addListener(new ChangeListener<String>() {
 
-			@Override
-			public void changed(ObservableValue<? extends String> observable, String oldValue, String newValue) {
-				if (newValue == null) return;
-
-				if (AutoCompleteTextField.this.caused.get()) {
-					AutoCompleteTextField.this.caused.set(false);
-					return;
-				}
-
-				setText(newValue);
-				hidePopup();
-				positionCaret(getText().length());
-			}
-
-		});
+        // Mouse Click Select Item
+        this.listView.setOnMouseClicked((e) -> {
+            if(e.getButton() == MouseButton.PRIMARY)
+                setTextToSelection();
+        });
 
 		this.listView.setOnKeyPressed(new EventHandler<KeyEvent>() {
 
-			@Override
-			public void handle(KeyEvent event) {
-				if (!AutoCompleteTextField.this.popup.isShowing()) return;
+            @Override
+            public void handle(KeyEvent event) {
+                if (!AutoCompleteTextField.this.popup.isShowing()) return;
 
-				final int index = AutoCompleteTextField.this.listView.getSelectionModel().getSelectedIndex();
-				if (event.getCode() == KeyCode.UP) {
-					AutoCompleteTextField.this.caused.set(true);
-					if (index > 0) {
-						AutoCompleteTextField.this.listView.getSelectionModel().select(index - 1);
-					}
-				} else if (event.getCode() == KeyCode.DOWN) {
-					AutoCompleteTextField.this.caused.set(true);
-					if (index < AutoCompleteTextField.this.listView.getItems().size()) {
-						AutoCompleteTextField.this.listView.getSelectionModel().select(index + 1);
-					}
-				}
+                final int index = AutoCompleteTextField.this.listView.getSelectionModel().getSelectedIndex();
+                if (event.getCode() == KeyCode.UP) {
+                    setSelection(index - 1);
+                    event.consume();
+                } else if (event.getCode() == KeyCode.DOWN) {
+                    setSelection(index + 1);
+                    event.consume();
+                }
 
-				if (event.getCode() == KeyCode.ENTER) {
-					final String text = AutoCompleteTextField.this.listView.getSelectionModel().getSelectedItem();
-					if ((text == null) || text.trim().isEmpty()) return;
-					setText(text);
-					hidePopup();
-					positionCaret(getText().length());
-				}
-			}
+                if (event.getCode() == KeyCode.ENTER)
+                    setTextToSelection();
+            }
 
-		});
+        });
 
 	}
 
@@ -198,12 +173,12 @@ public class AutoCompleteTextField extends TextField implements AutoCompleteCont
 	}
 
 	@Override
-	public void setMaxLength(int max) {
+	public void setMaxResults(int max) {
 		this.limit = max;
 	}
 
 	@Override
-	public int getMaxLength() {
+	public int getMaxResults() {
 		return this.limit;
 	}
 
@@ -214,10 +189,18 @@ public class AutoCompleteTextField extends TextField implements AutoCompleteCont
 	public void hidePopup() {
 		if (this.popup.isShowing()) {
 			this.popup.hide();
+            this.listView.getItems().clear();
 		}
 	}
 
 	public void showPopup() {
+        int count = this.listView.getItems().size();
+
+        Console.debug("Popup Request: AutoComplete Items = " + count + ", Will Show Popup? = " + (count != 0));
+
+        if(count == 0)
+            return;
+
 		this.listView.getSelectionModel().clearSelection();
 		final Point2D origin = FXGuiUtils.getScreenCoordinates(AutoCompleteTextField.this);
 		this.listView.setItems(FXGuiUtils.selectCompletionCandidates(AutoCompleteTextField.this.data, getText(), true));
@@ -245,4 +228,25 @@ public class AutoCompleteTextField extends TextField implements AutoCompleteCont
 
 		});
 	}
+
+    private void setSelection(int index) {
+        AutoCompleteTextField.this.caused.set(true);
+        if (index >= 0 && index < AutoCompleteTextField.this.listView.getItems().size()) {
+            AutoCompleteTextField.this.listView.getSelectionModel().select(index);
+        }
+    }
+
+    private void setTextToSelection() {
+        final String text = AutoCompleteTextField.this.listView.getSelectionModel().getSelectedItem();
+        if ((text == null) || text.trim().isEmpty()) return;
+        setText(text);
+        hidePopup();
+        positionCaret(getText().length());
+    }
+
+    private void organizeData(String text) {
+        ObservableList<String> selected = FXGuiUtils.selectCompletionCandidates(AutoCompleteTextField.this.data, text, true);
+        FXCollections.sort(selected);
+        AutoCompleteTextField.this.listView.setItems(selected);
+    }
 }

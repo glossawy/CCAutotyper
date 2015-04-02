@@ -1,19 +1,16 @@
 package com.mattc.autotyper.gui.fx;
 
-import java.util.ArrayList;
-
+import com.google.common.collect.Lists;
+import com.mattc.autotyper.meta.FXCompatible;
+import com.mattc.autotyper.meta.NodeParser;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.control.Label;
 import javafx.scene.layout.HBox;
 
-import com.google.common.collect.Lists;
-import com.mattc.autotyper.meta.FXCompatible;
-import com.mattc.autotyper.meta.InDev;
-import com.mattc.autotyper.meta.NodeParser;
+import java.util.ArrayList;
 
 @FXCompatible
-@InDev(sinceVersion = 2.0, lastUpdate = 2.0, author = "Matthew Crocco")
 public class InteractiveBox extends HBox {
 
 	private final ArrayList<Node> interactiveNodes = Lists.newArrayList();

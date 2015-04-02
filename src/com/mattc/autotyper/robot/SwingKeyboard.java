@@ -1,61 +1,17 @@
 package com.mattc.autotyper.robot;
 
-import static java.awt.event.KeyEvent.VK_0;
-import static java.awt.event.KeyEvent.VK_1;
-import static java.awt.event.KeyEvent.VK_2;
-import static java.awt.event.KeyEvent.VK_3;
-import static java.awt.event.KeyEvent.VK_4;
-import static java.awt.event.KeyEvent.VK_5;
-import static java.awt.event.KeyEvent.VK_6;
-import static java.awt.event.KeyEvent.VK_7;
-import static java.awt.event.KeyEvent.VK_8;
-import static java.awt.event.KeyEvent.VK_9;
-import static java.awt.event.KeyEvent.VK_A;
-import static java.awt.event.KeyEvent.VK_B;
-import static java.awt.event.KeyEvent.VK_BACK_QUOTE;
-import static java.awt.event.KeyEvent.VK_BACK_SLASH;
-import static java.awt.event.KeyEvent.VK_C;
-import static java.awt.event.KeyEvent.VK_CLOSE_BRACKET;
-import static java.awt.event.KeyEvent.VK_COMMA;
-import static java.awt.event.KeyEvent.VK_D;
-import static java.awt.event.KeyEvent.VK_E;
-import static java.awt.event.KeyEvent.VK_ENTER;
-import static java.awt.event.KeyEvent.VK_EQUALS;
-import static java.awt.event.KeyEvent.VK_F;
-import static java.awt.event.KeyEvent.VK_G;
-import static java.awt.event.KeyEvent.VK_H;
-import static java.awt.event.KeyEvent.VK_I;
-import static java.awt.event.KeyEvent.VK_J;
-import static java.awt.event.KeyEvent.VK_K;
-import static java.awt.event.KeyEvent.VK_L;
-import static java.awt.event.KeyEvent.VK_M;
-import static java.awt.event.KeyEvent.VK_MINUS;
-import static java.awt.event.KeyEvent.VK_N;
-import static java.awt.event.KeyEvent.VK_O;
-import static java.awt.event.KeyEvent.VK_OPEN_BRACKET;
-import static java.awt.event.KeyEvent.VK_P;
-import static java.awt.event.KeyEvent.VK_PERIOD;
-import static java.awt.event.KeyEvent.VK_Q;
-import static java.awt.event.KeyEvent.VK_QUOTE;
-import static java.awt.event.KeyEvent.VK_R;
-import static java.awt.event.KeyEvent.VK_S;
-import static java.awt.event.KeyEvent.VK_SEMICOLON;
-import static java.awt.event.KeyEvent.VK_SHIFT;
-import static java.awt.event.KeyEvent.VK_SLASH;
-import static java.awt.event.KeyEvent.VK_SPACE;
-import static java.awt.event.KeyEvent.VK_T;
-import static java.awt.event.KeyEvent.VK_TAB;
-import static java.awt.event.KeyEvent.VK_U;
-import static java.awt.event.KeyEvent.VK_V;
-import static java.awt.event.KeyEvent.VK_W;
-import static java.awt.event.KeyEvent.VK_X;
-import static java.awt.event.KeyEvent.VK_Y;
-import static java.awt.event.KeyEvent.VK_Z;
+import com.google.common.collect.Queues;
+import com.mattc.autotyper.Autotyper;
+import com.mattc.autotyper.meta.FXCompatible;
+import com.mattc.autotyper.meta.SwingCompatible;
+import com.mattc.autotyper.util.Console;
+import com.mattc.autotyper.util.IOUtils;
+import com.mattc.autotyper.util.OS.MemoryUnit;
+import org.jnativehook.keyboard.NativeKeyEvent;
+import org.jnativehook.keyboard.NativeKeyListener;
 
-import java.awt.AWTException;
-import java.awt.Rectangle;
-import java.awt.Robot;
-import java.awt.Toolkit;
+import javax.imageio.ImageIO;
+import java.awt.*;
 import java.awt.event.KeyEvent;
 import java.awt.image.BufferedImage;
 import java.io.File;
@@ -64,18 +20,9 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.List;
+import java.util.Queue;
 
-import javax.imageio.ImageIO;
-
-import org.jnativehook.keyboard.NativeKeyEvent;
-import org.jnativehook.keyboard.NativeKeyListener;
-
-import com.mattc.autotyper.Autotyper;
-import com.mattc.autotyper.meta.FXCompatible;
-import com.mattc.autotyper.meta.SwingCompatible;
-import com.mattc.autotyper.util.Console;
-import com.mattc.autotyper.util.IOUtils;
-import com.mattc.autotyper.util.OS.MemoryUnit;
+import static java.awt.event.KeyEvent.*;
 
 /**
  * Mimics the Keyboard to a large extent. <br />
@@ -97,6 +44,8 @@ import com.mattc.autotyper.util.OS.MemoryUnit;
 public class SwingKeyboard implements Keyboard {
 
 	private final Robot robo;
+    private final Queue<Integer> schedule = Queues.newConcurrentLinkedQueue();
+
 	private volatile KeyboardMode mode = KeyboardMode.INACTIVE;
 
 	/**
@@ -437,7 +386,12 @@ public class SwingKeyboard implements Keyboard {
 			while ((this.mode == KeyboardMode.PAUSED) || this.alt) {
 				IOUtils.sleep(200);
 			}
+
+            while(!schedule.isEmpty())
+                doType(schedule.remove());
+
 			if (this.mode == KeyboardMode.INACTIVE) {
+                schedule.clear();
 				break;
 			}
 
@@ -486,7 +440,12 @@ public class SwingKeyboard implements Keyboard {
 					while ((this.mode == KeyboardMode.PAUSED) || this.alt) {
 						IOUtils.sleep(200);
 					}
+
+                    while(!schedule.isEmpty())
+                        doType(schedule.remove());
+
 					if (this.mode == KeyboardMode.INACTIVE) {
+                        schedule.clear();
 						break outer;
 					}
 
@@ -608,8 +567,12 @@ public class SwingKeyboard implements Keyboard {
 				break;
 			}
 		} else if (this.alt && (e.getKeyChar() == 's')) {
+            if(this.mode == KeyboardMode.PAUSED)
+                schedule.add(VK_BACK_SPACE);
+
 			// Terminate Current Session for Alt + S
 			this.mode = KeyboardMode.INACTIVE;
+            schedule.add(VK_BACK_SPACE);
 			this.alt = false;
 		}
 
@@ -628,12 +591,13 @@ public class SwingKeyboard implements Keyboard {
 			// Alt + P will print P in computer craft, this deletes the P
 			// if the user did not.
 			if (!this.bspace && this.keypressed) {
-				doType(KeyEvent.VK_BACK_SPACE);
+				schedule.add(KeyEvent.VK_BACK_SPACE);
 			} else {
 				this.bspace = false;
 			}
 
-			doType(KeyEvent.VK_BACK_SPACE);
+            if(this.keypressed)
+			    schedule.add(KeyEvent.VK_BACK_SPACE);
 		}
 	}
 
