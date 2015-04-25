@@ -7,10 +7,7 @@ import com.google.common.collect.Sets;
 import com.google.common.hash.HashCode;
 import com.google.common.hash.HashFunction;
 import com.google.common.hash.Hashing;
-import com.mattc.autotyper.AppVersion;
-import com.mattc.autotyper.Autotyper;
-import com.mattc.autotyper.Ref;
-import com.mattc.autotyper.Strings;
+import com.mattc.autotyper.*;
 import com.mattc.autotyper.Strings.Resources;
 import com.mattc.autotyper.Strings.Resources.Resource;
 import com.mattc.autotyper.gui.ConfirmFileDialog;
@@ -18,9 +15,8 @@ import com.mattc.autotyper.gui.GuiAccessor;
 import com.mattc.autotyper.gui.LocationHandler;
 import com.mattc.autotyper.gui.fx.FXOptionPane.IconType;
 import com.mattc.autotyper.meta.Outcome;
-import com.mattc.autotyper.robot.FXKeyboard;
 import com.mattc.autotyper.robot.Keyboard;
-import com.mattc.autotyper.robot.SwingKeyboard;
+import com.mattc.autotyper.robot.KeyboardMethodology;
 import com.mattc.autotyper.util.Console;
 import javafx.application.Application;
 import javafx.application.Platform;
@@ -185,14 +181,27 @@ public class FXAutotyperWindow extends Application {
 			public void changed(ObservableValue<? extends String> observable, String oldValue, String newValue) {
 
 				if (newValue.trim().isEmpty()) {
-					FXAutotyperWindow.this.inputDelayProperty.set(1);
+                    FXAutotyperWindow.this.inputDelayProperty.set(com.mattc.autotyper.Parameters.MIN_DELAY);
 				} else if (!isValid(newValue)) {
 					iField.setText(oldValue);
 				} else {
-					FXAutotyperWindow.this.inputDelayProperty.set(Integer.parseInt(newValue));
+                    int value = Integer.parseInt(newValue);
+                    FXAutotyperWindow.this.inputDelayProperty.set(Math.max(value, com.mattc.autotyper.Parameters.MIN_DELAY));
 				}
 			}
 		});
+
+        // When we lose foucs, check value to display at least the minimum delay
+        iField.focusedProperty().addListener((obs, ov, nv) -> {
+            if(nv == true || !isValid(iField.getText()))
+                return;
+
+            int val = Integer.parseInt(iField.getText());
+            if(val < com.mattc.autotyper.Parameters.MIN_DELAY) {
+                iField.setText(String.valueOf(com.mattc.autotyper.Parameters.MIN_DELAY));
+                inputDelayProperty.set(com.mattc.autotyper.Parameters.MIN_DELAY);
+            }
+        });
 
 		cBtn.selectedProperty().addListener(new ChangeListener<Boolean>() {
 			@Override
@@ -497,12 +506,7 @@ public class FXAutotyperWindow extends Application {
     }
 
 	private void obtainKeyboard() {
-		if (FXGuiUtils.isFXRobotAvailable()) {
-			this.keys = new FXKeyboard(this.inputDelayProperty.get());
-		} else {
-			this.keys = new SwingKeyboard(this.inputDelayProperty.get());
-		}
-		// this.keys = new SwingKeyboard(this.inDelay);
+		this.keys = Keyboard.retrieveKeyboard(KeyboardMethodology.TYPING);
 	}
 
 	private boolean isValid(String input) {

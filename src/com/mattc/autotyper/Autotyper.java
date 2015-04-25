@@ -5,7 +5,8 @@ import com.mattc.autotyper.gui.GuiAccessor;
 import com.mattc.autotyper.gui.fx.FXAutotyperWindow;
 import com.mattc.autotyper.gui.fx.FXGuiUtils;
 import com.mattc.autotyper.gui.fx.FXOptionPane;
-import com.mattc.autotyper.robot.SwingKeyboard;
+import com.mattc.autotyper.robot.Keyboard;
+import com.mattc.autotyper.robot.KeyboardMethodology;
 import com.mattc.autotyper.util.Console;
 import com.mattc.autotyper.util.IOUtils;
 import com.mattc.autotyper.util.OS;
@@ -56,15 +57,6 @@ public class Autotyper {
 	/**
 	 * Take the Program Arguments and execute the Autotyping procedure. Either using
 	 * the program args or by loading up a GUI interface. <br />
-     * <br />
-     * If the GUI Flag is found, whatever GuiAccessor was obtained in construction has
-     * {@link com.mattc.autotyper.gui.GuiAccessor#doShow()} executed. This means either keyboard
-     * may be used. FX or Swing. <br />
-     * <br />
-     * If we are running by CLI, {@link com.mattc.autotyper.robot.SwingKeyboard} is used since
-     * {@link com.mattc.autotyper.robot.FXKeyboard} cannot be used outside of the JavaFX Application
-     * Thread. Before executing in the CLI, the arguments are parsed into a Parameters object and then
-     * handled as appropriate.
 	 * 
 	 * @param args
 	 */
@@ -79,7 +71,8 @@ public class Autotyper {
 		} else {
 			printCopyrightStatement(false);
 			final Parameters params = parseArgs(args);
-			final SwingKeyboard keys = new SwingKeyboard(params.inputDelay);
+			final Keyboard keys = Keyboard.retrieveKeyboard(KeyboardMethodology.TYPING);
+            keys.setInputDelay(params.inputDelay);
 			final File f = params.file;
 
 			try {

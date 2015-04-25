@@ -1,6 +1,8 @@
 package com.mattc.autotyper.robot;
 
-import org.jnativehook.keyboard.NativeKeyListener;
+import com.mattc.autotyper.Parameters;
+import com.mattc.autotyper.gui.fx.FXGuiUtils;
+import com.mattc.autotyper.util.Console;
 
 import java.io.File;
 import java.io.IOException;
@@ -10,10 +12,18 @@ import java.io.IOException;
  * 
  * @author Matthew
  * @see SwingKeyboard
- * @see FXKeyboard
  *
  */
-public interface Keyboard extends NativeKeyListener {
+public abstract class Keyboard  {
+
+    public static Keyboard retrieveKeyboard(KeyboardMethodology preferred) {
+        Console.info("SwingKeyboard Created!");
+        Keyboard keyboard = new SwingKeyboard(Parameters.DEFAULT_DELAY);
+
+        Console.info("Keyboard Methodology Created for " + preferred + "...");
+        keyboard.setMethod(preferred);
+        return keyboard;
+    }
 
 	/**
 	 * Enumerates the 3 State in which a Keyboard can exist:
@@ -27,7 +37,7 @@ public interface Keyboard extends NativeKeyListener {
 	 * 
 	 * @author Matthew
 	 */
-	public enum KeyboardMode {
+	enum KeyboardMode {
 		/** Is Typing & Is In an Active Session */
 		ACTIVE,
 		/** Is Not Typing & Is In An Active Session */
@@ -41,14 +51,14 @@ public interface Keyboard extends NativeKeyListener {
 	 * 
 	 * @param c
 	 */
-	void type(char c);
+	public abstract void type(char c);
 
 	/**
 	 * Type all characters in the string to the screen.
 	 * 
 	 * @param str
 	 */
-	void type(String str);
+    public abstract void type(String str);
 
 	/**
 	 * Type an entire file's contents to the screen.
@@ -56,45 +66,43 @@ public interface Keyboard extends NativeKeyListener {
 	 * @param f
 	 * @throws IOException
 	 */
-	void typeFile(File f) throws IOException;
+    public abstract void typeFile(File f) throws IOException;
 
 	/**
 	 * Take image of screen and save.
 	 */
 	@Deprecated
-	void writeCrashImage();
+    public abstract void writeCrashImage();
 
 	/**
 	 * Set Input Delay (On a per Keystroke Basis)
 	 * 
 	 * @param msDelay
 	 */
-	void setInputDelay(int msDelay);
+    public abstract void setInputDelay(int msDelay);
 
 	/**
 	 * Get Input Delay (On a per Keystroke Basis)
 	 * 
 	 * @return
 	 */
-	int getInputDelay();
-
-	/**
-	 * Set the KeyboardMode to either start, pause or terminate a procedure.
-	 * 
-	 * @param mode
-	 */
-	void setKeyboardMode(KeyboardMode mode);
+    public abstract int getInputDelay();
 
 	/**
 	 * Get current Keyboard State
 	 * 
 	 * @return
 	 */
-	KeyboardMode getKeyboardMode();
+    public abstract KeyboardMode getKeyboardMode();
 
 	/**
 	 * Destroy any native or destroyable assets.
 	 */
-	void destroy();
+    public abstract void destroy();
+
+    public abstract void setMethod(KeyboardMethodology method);
+    abstract void press(int code);
+    abstract void release(int code);
+    abstract void doType(int... codes);
 
 }

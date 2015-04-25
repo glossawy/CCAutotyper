@@ -1,26 +1,17 @@
 package com.mattc.autotyper.robot;
 
-import com.google.common.collect.Queues;
 import com.mattc.autotyper.Autotyper;
+import com.mattc.autotyper.Parameters;
 import com.mattc.autotyper.meta.FXCompatible;
 import com.mattc.autotyper.meta.SwingCompatible;
 import com.mattc.autotyper.util.Console;
-import com.mattc.autotyper.util.IOUtils;
-import com.mattc.autotyper.util.OS.MemoryUnit;
-import org.jnativehook.keyboard.NativeKeyEvent;
 import org.jnativehook.keyboard.NativeKeyListener;
 
 import javax.imageio.ImageIO;
 import java.awt.*;
-import java.awt.event.KeyEvent;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Paths;
-import java.util.List;
-import java.util.Queue;
 
 import static java.awt.event.KeyEvent.*;
 
@@ -41,24 +32,22 @@ import static java.awt.event.KeyEvent.*;
  */
 @FXCompatible
 @SwingCompatible
-public class SwingKeyboard implements Keyboard {
+class SwingKeyboard extends Keyboard {
 
 	private final Robot robo;
-    private final Queue<Integer> schedule = Queues.newConcurrentLinkedQueue();
-
-	private volatile KeyboardMode mode = KeyboardMode.INACTIVE;
+    private Methodology method;
 
 	/**
 	 * Create an instance of Keyboard with the given delay between Key Presses.
 	 * 
 	 * @param actionDelay
 	 */
-	public SwingKeyboard(int actionDelay) {
+    SwingKeyboard(int actionDelay) {
 		try {
+            actionDelay = Math.max(actionDelay, Parameters.MIN_DELAY);
 			this.robo = new Robot();
 			this.robo.setAutoDelay(actionDelay);
 			this.robo.setAutoWaitForIdle(true);
-			Autotyper.registerGlobalKeyListener(this);
 		} catch (final AWTException e) {
 			throw new IllegalStateException("Could not create java.awt.Robot!", e);
 		}
@@ -379,26 +368,7 @@ public class SwingKeyboard implements Keyboard {
 	 */
 	@Override
 	public void type(String text) {
-		final char[] chars = text.toCharArray();
-		this.mode = KeyboardMode.ACTIVE;
-
-		for (final char c : chars) {
-			while ((this.mode == KeyboardMode.PAUSED) || this.alt) {
-				IOUtils.sleep(200);
-			}
-
-            while(!schedule.isEmpty())
-                doType(schedule.remove());
-
-			if (this.mode == KeyboardMode.INACTIVE) {
-                schedule.clear();
-				break;
-			}
-
-			type(c);
-		}
-
-		this.mode = KeyboardMode.INACTIVE;
+        method.typeLine(text);
 	}
 
 	/**
@@ -410,52 +380,7 @@ public class SwingKeyboard implements Keyboard {
 	 */
 	@Override
 	public void typeFile(File f) throws IOException {
-		final List<String> lines = Files.readAllLines(Paths.get(f.toURI()), StandardCharsets.UTF_8);
-
-		this.mode = KeyboardMode.ACTIVE;
-		final MemoryUnit mem = MemoryUnit.KILOBYTES;
-		final long size = mem.convert(f.length(), MemoryUnit.BYTES);
-		Console.info(String.format("Writing File of Size %,d KB consisting of %,d lines", size, lines.size()));
-
-		boolean block = false;
-		outer:
-			for (final String l : lines) {
-				// Ignore Empty Lines and Comments
-				if (l.length() == 0) {
-					continue;
-				} else if (l.startsWith("--[[")) {
-					block = true;
-					continue;
-				} else if (block && (l.endsWith("]]") || l.endsWith("]]--"))) {
-					block = false;
-					continue;
-				} else if (l.startsWith("--")) {
-					continue;
-				}
-
-				// Basically a copy of type(String) but this gives us more control
-				// to pause and stop on a per character basis, not a per line basis.
-				final char[] characters = l.trim().toCharArray();
-				for (final char c : characters) {
-					while ((this.mode == KeyboardMode.PAUSED) || this.alt) {
-						IOUtils.sleep(200);
-					}
-
-                    while(!schedule.isEmpty())
-                        doType(schedule.remove());
-
-					if (this.mode == KeyboardMode.INACTIVE) {
-                        schedule.clear();
-						break outer;
-					}
-
-					type(c);
-				}
-				doType(VK_ENTER);
-			}
-
-		Console.debug("FINISHED");
-		this.mode = KeyboardMode.INACTIVE;
+        method.typeFile(f);
 	}
 
 	/**
@@ -465,17 +390,7 @@ public class SwingKeyboard implements Keyboard {
 	 */
 	@Override
 	public void setInputDelay(int delay) {
-		this.robo.setAutoDelay(delay);
-	}
-
-	/**
-	 * Alter the current state of the Keyboard
-	 * 
-	 * @param mode
-	 */
-	@Override
-	public void setKeyboardMode(KeyboardMode mode) {
-		this.mode = mode;
+		this.robo.setAutoDelay(Math.max(delay, Parameters.MIN_DELAY));
 	}
 
 	/**
@@ -495,7 +410,7 @@ public class SwingKeyboard implements Keyboard {
 	 */
 	@Override
 	public KeyboardMode getKeyboardMode() {
-		return this.mode;
+		return this.method.mode();
 	}
 
 	/**
@@ -516,7 +431,26 @@ public class SwingKeyboard implements Keyboard {
 		}
 	}
 
-	/**
+    @Override
+    public void setMethod(KeyboardMethodology method) {
+        if(this.method != null)
+            Autotyper.unregisterGlobalKeyListener(this.method);
+
+        this.method = method.create(this);
+        Autotyper.registerGlobalKeyListener(this.method);
+    }
+
+    @Override
+    void press(int code) {
+        robo.keyPress(code);
+    }
+
+    @Override
+    void release(int code) {
+        robo.keyRelease(code);
+    }
+
+    /**
 	 * Internal Method for pressing keys. Very convenient for Key Strokes. (i.e.
 	 * Shift + 1 to get !). <br />
 	 * <br />
@@ -524,9 +458,9 @@ public class SwingKeyboard implements Keyboard {
 	 * 
 	 * @param keycodes
 	 */
-	private void doType(int... keycodes) {
+	 void doType(int... keycodes) {
 		doType(keycodes, 0, keycodes.length);
-	}
+	 }
 
 	/**
 	 * Recursively Press and Release Keys to mimic Key Strokes.
@@ -543,81 +477,10 @@ public class SwingKeyboard implements Keyboard {
 		this.robo.keyRelease(codes[offset]);
 	}
 
-	private volatile boolean alt = false;
-	private volatile boolean keypressed = false;
-	private volatile boolean bspace = false;
-
-	@Override
-	public void nativeKeyTyped(NativeKeyEvent e) {
-
-		// Ignore if alt is not pressed, it's all we care about.
-		if (!this.alt) return;
-
-		String log = this.mode.name() + "...";
-		if (this.alt && (e.getKeyChar() == 'p')) {
-			// Toggle for Alt + P
-			switch (this.mode) {
-			case ACTIVE:
-				this.mode = KeyboardMode.PAUSED;
-				break;
-			case PAUSED:
-				this.mode = KeyboardMode.ACTIVE;
-				break;
-			default:
-				break;
-			}
-		} else if (this.alt && (e.getKeyChar() == 's')) {
-            if(this.mode == KeyboardMode.PAUSED)
-                schedule.add(VK_BACK_SPACE);
-
-			// Terminate Current Session for Alt + S
-			this.mode = KeyboardMode.INACTIVE;
-            schedule.add(VK_BACK_SPACE);
-			this.alt = false;
-		}
-
-		log = "Keyboard set to " + this.mode.name() + " from " + log;
-		Console.debug(log);
-		IOUtils.sleep(20);
-	}
-
-	@Override
-	public void nativeKeyReleased(NativeKeyEvent e) {
-		// If Keyboard is Active and Left Alt is released
-		if ((e.getKeyCode() == NativeKeyEvent.VC_ALT_L) && (this.mode == KeyboardMode.ACTIVE)) {
-			this.alt = false;
-
-			// Delete the 1 or 2 stray characters
-			// Alt + P will print P in computer craft, this deletes the P
-			// if the user did not.
-			if (!this.bspace && this.keypressed) {
-				schedule.add(KeyEvent.VK_BACK_SPACE);
-			} else {
-				this.bspace = false;
-			}
-
-            if(this.keypressed)
-			    schedule.add(KeyEvent.VK_BACK_SPACE);
-		}
-	}
-
-	@Override
-	public void nativeKeyPressed(NativeKeyEvent e) {
-		// If Left Alt is Pressed, set the Alt Flag to true.
-		if (e.getKeyCode() == NativeKeyEvent.VC_ALT_L) {
-			this.alt = true;
-		} else if (this.alt && (e.getKeyCode() == NativeKeyEvent.VC_BACKSPACE)) {
-			this.bspace = true;
-		} else if (this.alt) {
-			this.keypressed = true;
-		}
-
-	}
-
 	@Override
 	public void destroy() {
-		this.mode = KeyboardMode.INACTIVE;
-		Autotyper.unregisterGlobalKeyListener(this);
+		this.method.destroy();
+		Autotyper.unregisterGlobalKeyListener(method);
 	}
 
 }

@@ -8,7 +8,8 @@ import com.mattc.autotyper.Strings;
 import com.mattc.autotyper.Strings.Resources;
 import com.mattc.autotyper.Strings.Resources.Resource;
 import com.mattc.autotyper.meta.Outcome;
-import com.mattc.autotyper.robot.SwingKeyboard;
+import com.mattc.autotyper.robot.Keyboard;
+import com.mattc.autotyper.robot.KeyboardMethodology;
 import com.mattc.autotyper.util.Console;
 import com.mattc.autotyper.util.IOUtils;
 import org.fife.ui.autocomplete.*;
@@ -34,7 +35,7 @@ import java.util.prefs.Preferences;
  * <br />
  * Handles such things as auto-completion and launching the application. Attempts to
  * be slick... using Swing...
- * 
+ *
  * @author Matthew
  *
  */
@@ -44,7 +45,7 @@ public class AutotyperWindow extends JFrame implements GuiAccessor {
 
 	private static final String RANK = "rank";
 
-	private final SwingKeyboard keys;
+	private final Keyboard keys;
 	private final Preferences prefs;
 	private final Timer timer = new Timer(true);
 	private final String[] locations = new String[50];
@@ -58,12 +59,12 @@ public class AutotyperWindow extends JFrame implements GuiAccessor {
 		super(Ref.TITLE + " | " + Ref.VERSION);
 
 		// Initialize Preferences and Swing based Keyboard (we know FX won't work
-		this.keys = new SwingKeyboard(Parameters.DEFAULT_DELAY);
-		this.prefs = Preferences.userNodeForPackage(AutotyperWindow.class);
+		this.keys = Keyboard.retrieveKeyboard(KeyboardMethodology.TYPING);
+        this.keys.setInputDelay(Parameters.DEFAULT_DELAY);
 
-		EventQueue.invokeLater(new Runnable() {
-			@Override
-			public void run() {
+        this.prefs = Preferences.userNodeForPackage(AutotyperWindow.class);
+
+		EventQueue.invokeLater(() ->{
 				Thread.currentThread().setName("GUI");
 				setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
 				setIcons();
@@ -74,7 +75,6 @@ public class AutotyperWindow extends JFrame implements GuiAccessor {
 				setResizable(false);
 				setLocationRelativeTo(null);
 				setVisible(false);
-			}
 		});
 	}
 
