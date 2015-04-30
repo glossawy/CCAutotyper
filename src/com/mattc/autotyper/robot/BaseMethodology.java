@@ -1,5 +1,7 @@
 package com.mattc.autotyper.robot;
 
+import static java.awt.event.KeyEvent.VK_BACK_SPACE;
+
 import com.google.common.collect.Queues;
 import com.mattc.autotyper.util.Console;
 import com.mattc.autotyper.util.IOUtils;
@@ -8,8 +10,6 @@ import org.jnativehook.keyboard.NativeKeyEvent;
 import java.io.File;
 import java.io.IOException;
 import java.util.Queue;
-
-import static java.awt.event.KeyEvent.VK_BACK_SPACE;
 
 /**
  * Needs Documentation
@@ -84,7 +84,7 @@ public abstract class BaseMethodology implements Methodology {
             this.alt = false;
         }
 
-        log = "Keyboard set to " + this.mode.name() + " from " + log;
+        log = "Keyboard set to " + this.mode.name() + " of " + log;
         Console.debug(log);
         IOUtils.sleep(20);
     }

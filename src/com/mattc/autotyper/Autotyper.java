@@ -1,29 +1,35 @@
 package com.mattc.autotyper;
 
+import static com.google.common.base.StandardSystemProperty.*;
+import static com.mattc.autotyper.Strings.*;
+import static com.mattc.autotyper.util.Console.logToFile;
+
 import com.mattc.autotyper.gui.AutotyperWindow;
 import com.mattc.autotyper.gui.GuiAccessor;
 import com.mattc.autotyper.gui.fx.FXAutotyperWindow;
 import com.mattc.autotyper.gui.fx.FXGuiUtils;
-import com.mattc.autotyper.gui.fx.FXOptionPane;
 import com.mattc.autotyper.robot.Keyboard;
 import com.mattc.autotyper.robot.KeyboardMethodology;
 import com.mattc.autotyper.util.Console;
 import com.mattc.autotyper.util.IOUtils;
 import com.mattc.autotyper.util.OS;
-import it.sauronsoftware.junique.AlreadyLockedException;
-import it.sauronsoftware.junique.JUnique;
-import javafx.application.Platform;
 import org.jnativehook.GlobalScreen;
 import org.jnativehook.NativeHookException;
 import org.jnativehook.keyboard.NativeKeyListener;
+import it.sauronsoftware.junique.AlreadyLockedException;
+import it.sauronsoftware.junique.JUnique;
 
-import javax.swing.*;
-import java.io.*;
+import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.io.PrintStream;
 import java.util.Arrays;
-
-import static com.google.common.base.StandardSystemProperty.*;
-import static com.mattc.autotyper.Strings.*;
-import static com.mattc.autotyper.util.Console.logToFile;
+import javax.swing.JOptionPane;
+import javax.swing.UIManager;
+import javafx.application.Platform;
+import javafx.scene.control.Alert;
 
 /**
  * The Main Class of the Application meant to allow Minecraft Players who use
@@ -57,8 +63,6 @@ public class Autotyper {
 	/**
 	 * Take the Program Arguments and execute the Autotyping procedure. Either using
 	 * the program args or by loading up a GUI interface. <br />
-	 * 
-	 * @param args
 	 */
 	public void launch(String[] args) {
 		if (args[0].equalsIgnoreCase(FLAG_GUI)) {
@@ -82,7 +86,6 @@ public class Autotyper {
 				Console.exception(e);
 			} finally {
 				keys.destroy();
-				System.exit(0);
 			}
 		}
 	}
@@ -90,9 +93,8 @@ public class Autotyper {
 	/**
 	 * Take Arguments and parse flags as provided. Optional arguments are evaluated
 	 * in the order they are provided. Ideally none should conflict.
-	 * 
-	 * @param args
-	 * @return The File to extract the information from.
+	 *
+	 * @return The File to extract the information of.
 	 */
 	private Parameters parseArgs(String[] args) {
 
@@ -141,8 +143,6 @@ public class Autotyper {
 
 	/**
 	 * Register a NativeKeyListener to receive ALL KeyEvents
-	 * 
-	 * @param listener
 	 */
 	public static void registerGlobalKeyListener(NativeKeyListener listener) {
 		global.addNativeKeyListener(listener);
@@ -150,8 +150,6 @@ public class Autotyper {
 
 	/**
 	 * Unregister a NativeKeyListener
-	 * 
-	 * @param listener
 	 */
 	public static void unregisterGlobalKeyListener(NativeKeyListener listener) {
 		global.removeNativeKeyListener(listener);
@@ -165,7 +163,7 @@ public class Autotyper {
 		try {
 			JUnique.acquireLock(Ref.APP_ID);
 		} catch (final AlreadyLockedException e) {
-			JOptionPane.showMessageDialog(null, String.format("Instance of %s Already Running!", Ref.TITLE), "Instance Collision!", JOptionPane.ERROR_MESSAGE);
+			JOptionPane.showMessageDialog(null, String.format("Instance of %s Already Running!", Ref.APP_NAME), "Instance Collision!", JOptionPane.ERROR_MESSAGE);
 			System.exit(-1);
 		}
 
@@ -200,7 +198,7 @@ public class Autotyper {
 
 		System.out.println();
 		System.out.println();
-		System.out.println(Ref.TITLE + " | " + Ref.VERSION + " by " + Ref.AUTHOR);
+		System.out.println(Ref.APP_NAME + " | " + Ref.VERSION + " by " + Ref.AUTHOR);
 		System.out.println("Usage: java -jar ccautotyper.jar [file|url|paste|gui] <location> [-wait] [-inputDelay]");
 		System.out.println(String.format(std, FLAG_FILE) + " - Indicates the file is on the local filesystem");
 		System.out.println(String.format(std, FLAG_URL)  + " - Indicates the file must be downloaded");
@@ -260,13 +258,13 @@ public class Autotyper {
 		ByteArrayOutputStream bos = null;
 
 		try {
-			final byte[] buf = new byte[1024];
-			is = Autotyper.class.getClassLoader().getResourceAsStream("com/mattc/autotyper/license");
+			final byte[] buf = new byte[8192];
+			is = Resources.getLicense().stream();
 			bos = new ByteArrayOutputStream();
 
 			if (is == null) {
 				Console.error("Copyright Statement Not Found! Exiting...");
-				IOUtils.closeSilently(bos);
+				IOUtils.close(bos);
 				System.exit(-3);
 			}
 
@@ -276,7 +274,10 @@ public class Autotyper {
 
 			if (gui) {
 				if (FXGuiUtils.canUseJavaFX() && Platform.isFxApplicationThread()) {
-					FXOptionPane.showMessage("Copyright & Warranty", bos.toString());
+					Alert alert = FXGuiUtils.buildLongAlert("This Software is Licensed with No Warranty", bos.toString());
+					alert.setTitle("Copyright & Warranty");
+
+                    alert.show();
 				} else {
 					JOptionPane.showMessageDialog(null, bos.toString(), "Copyright & Warranty", JOptionPane.INFORMATION_MESSAGE);
 				}
@@ -287,8 +288,8 @@ public class Autotyper {
 		} catch (final Exception e) {
 			Console.exception(e);
 		} finally {
-			IOUtils.closeSilently(is);
-			IOUtils.closeSilently(bos);
+			IOUtils.close(is);
+			IOUtils.close(bos);
 		}
 	}
 
@@ -327,9 +328,7 @@ public class Autotyper {
 			// Correct for RTextAreaBase Printing "Yo"
 			@Override
 			public void println(String s) {
-				if (s.equalsIgnoreCase("yo"))
-					return;
-				else
+				if (!s.equalsIgnoreCase("yo"))
 					super.println(s);
 			}
 		});
@@ -349,9 +348,7 @@ public class Autotyper {
     // Do nothing with any input
 	private static final OutputStream NULL_STREAM = new OutputStream() {
 		@Override
-		public void write(int b) throws IOException {
-			return;
-		}
+		public void write(int b) throws IOException {}
 	};
 
 }

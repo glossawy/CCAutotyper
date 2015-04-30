@@ -12,9 +12,9 @@ public class Ref {
      */
     public static final String APP_ID = "com.mattc.ccautotyper";
     /**
-     * The constant TITLE.
+     * The constant APP_NAME.
      */
-    public static final String TITLE = "CC Autotyper";
+    public static final String APP_NAME = "CC Autotyper";
     /**
      * The constant AUTHOR.
      */

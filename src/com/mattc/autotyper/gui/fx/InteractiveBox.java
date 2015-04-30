@@ -3,12 +3,12 @@ package com.mattc.autotyper.gui.fx;
 import com.google.common.collect.Lists;
 import com.mattc.autotyper.meta.FXCompatible;
 import com.mattc.autotyper.meta.NodeParser;
+
+import java.util.ArrayList;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.control.Label;
 import javafx.scene.layout.HBox;
-
-import java.util.ArrayList;
 
 @FXCompatible
 public class InteractiveBox extends HBox {

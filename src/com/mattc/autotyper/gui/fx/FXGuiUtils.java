@@ -1,66 +1,55 @@
 package com.mattc.autotyper.gui.fx;
 
-import javafx.beans.value.ChangeListener;
-import javafx.beans.value.ObservableValue;
-import javafx.collections.FXCollections;
-import javafx.collections.ObservableList;
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import javafx.event.ActionEvent;
-import javafx.event.EventHandler;
 import javafx.geometry.Bounds;
 import javafx.geometry.Point2D;
 import javafx.scene.Node;
+import javafx.scene.control.Alert;
+import javafx.scene.control.Label;
+import javafx.scene.control.TextArea;
 import javafx.scene.control.TextInputControl;
 import javafx.scene.control.Toggle;
 import javafx.scene.control.ToggleButton;
 import javafx.scene.control.ToggleGroup;
 import javafx.scene.input.KeyEvent;
+import javafx.scene.layout.GridPane;
+import javafx.scene.layout.Priority;
 import javafx.stage.Stage;
-import javafx.stage.Window;
-
-import java.util.Comparator;
 
 public class FXGuiUtils {
 
-	public static final void setToggleTextSwitch(final ToggleButton btn, final String onText, final String offText) {
+	public static void setToggleTextSwitch(final ToggleButton btn, final String onText, final String offText) {
 
-		btn.addEventHandler(ActionEvent.ACTION, new EventHandler<ActionEvent>() {
-
-			@Override
-			public void handle(ActionEvent event) {
-				if (btn.isSelected()) {
-					btn.setText(onText);
-				} else {
-					btn.setText(offText);
-				}
+		btn.addEventHandler(ActionEvent.ACTION, (event) -> {
+			if (btn.isSelected()) {
+				btn.setText(onText);
+			} else {
+				btn.setText(offText);
 			}
-
 		});
 
 		btn.fireEvent(new ActionEvent());
 	}
 
-	public static final void setMaxCharCount(final TextInputControl control, final int count) {
-		control.addEventFilter(KeyEvent.KEY_TYPED, new EventHandler<KeyEvent>() {
-
-			@Override
-			public void handle(KeyEvent event) {
-				final String text = control.getText();
-				if (text.length() == count) {
-					event.consume();
-				} else if (text.length() > count) {
-					control.setText(text.substring(0, count));
-					event.consume();
-				}
+	public static void setMaxCharCount(final TextInputControl control, final int count) {
+		control.addEventFilter(KeyEvent.KEY_TYPED, (event) -> {
+			final String text = control.getText();
+			if (text.length() == count) {
+				event.consume();
+			} else if (text.length() > count) {
+				control.setText(text.substring(0, count));
+				event.consume();
 			}
-
 		});
 	}
 
-	public static final boolean addTogglesToGroup(ToggleGroup group, Toggle... toggles) {
+	public static boolean addTogglesToGroup(ToggleGroup group, Toggle... toggles) {
 		return group.getToggles().addAll(toggles);
 	}
 
-	public static final boolean addTogglesToGroup(MetaToggleGroup group, Toggle... toggles) {
+	public static boolean addTogglesToGroup(MetaToggleGroup group, Toggle... toggles) {
 		for (final Toggle t : toggles) {
 			group.add(t, "");
 		}
@@ -68,56 +57,7 @@ public class FXGuiUtils {
 		return true;
 	}
 
-	public static final int getPointer(Object[] arr) {
-		for (int i = 0; i < arr.length; i++) {
-			if (arr[i] == null) return i;
-		}
-
-		return arr.length;
-	}
-
-    // TODO MOve out of Utils and into a separate selector class. Use Java 8 Function Interfaces?
-	public static ObservableList<String> selectCompletionCandidates(final ObservableList<String> data, String base, boolean sort) {
-		if(base.isEmpty())
-            return FXCollections.observableArrayList(data);
-
-        ObservableList<StringWrapper> wrappers = FXCollections.observableArrayList();
-		final ObservableList<String> candidates = FXCollections.observableArrayList();
-
-		for (final String s : data) {
-			wrappers.add(new StringWrapper(s));
-		}
-
-		wrappers = selectCompletionCandidates(wrappers, new StringWrapper(base), sort);
-
-		for (final StringWrapper wrapper : wrappers) {
-			candidates.add(wrapper.toString());
-		}
-
-		return candidates;
-	}
-
-	public static <T extends AutoCompleteObject<T>> ObservableList<T> selectCompletionCandidates(final ObservableList<T> data, final T base, final boolean sort) {
-		final ObservableList<T> candidates = FXCollections.observableArrayList();
-
-		for (final T obj : data)
-			if ((obj != null) && base.isValidCandidate(obj)) {
-				candidates.add(obj);
-			}
-
-		if (sort) {
-			FXCollections.sort(candidates, new Comparator<T>() {
-				@Override
-				public int compare(T first, T second) {
-					return first.compareTo(second);
-				}
-			});
-		}
-
-		return candidates;
-	}
-
-	public static final Point2D getScreenCoordinates(Node node) {
+	public static Point2D getScreenCoordinates(Node node) {
 
 		final double x = node.getScene().getWindow().getX();
 		final double y = node.getScene().getWindow().getY();
@@ -125,33 +65,6 @@ public class FXGuiUtils {
 		final Bounds localBounds = node.localToScene(node.getBoundsInLocal());
 
 		return new Point2D(x + localBounds.getMinX(), y + localBounds.getMaxY());
-	}
-
-	private static class StringWrapper implements AutoCompleteObject<StringWrapper> {
-
-		private final String str;
-        private final String compStr;
-
-		private StringWrapper(String str) {
-			this.str = str;
-            this.compStr = str.toLowerCase();
-		}
-
-		@Override
-		public boolean isValidCandidate(StringWrapper base) {
-            return base.compStr.contains(this.compStr);
-		}
-
-		@Override
-		public int compareTo(StringWrapper other) {
-			return this.str.compareTo(other.str);
-		}
-
-		@Override
-		public String toString() {
-			return this.str;
-		}
-
 	}
 
 	public static boolean canUseJavaFX() {
@@ -170,31 +83,71 @@ public class FXGuiUtils {
 		}
 	}
 
-	public static void makeAlwaysOnTop(final Window window) {
-		window.focusedProperty().addListener(new ChangeListener<Boolean>() {
-
-			@Override
-			public void changed(ObservableValue<? extends Boolean> observable, Boolean oldValue, Boolean newValue) {
-				if (!newValue.booleanValue()) {
-					window.requestFocus();
-				}
-			}
-
-		});
+	public static void makeAlwaysOnTop(final Stage stage) {
+		stage.setAlwaysOnTop(true);
 	}
 
-	public static void makeAlwaysOnTop(final Stage stage) {
-		stage.focusedProperty().addListener(new ChangeListener<Boolean>() {
+	public static Alert buildLongAlert(String context, String longMessage) {
+		Alert alert = new Alert(Alert.AlertType.INFORMATION);
+        alert.setHeaderText(context);
 
-			@Override
-			public void changed(ObservableValue<? extends Boolean> observable, Boolean oldValue, Boolean newValue) {
-				if (!newValue.booleanValue()) {
-					stage.requestFocus();
-					stage.toFront();
-				}
-			}
+		Label label = new Label("Details: ");
 
-		});
+		TextArea textArea = new TextArea(longMessage);
+		textArea.setEditable(false);
+		textArea.setWrapText(false);
+
+		textArea.setMaxHeight(Double.MAX_VALUE);
+		textArea.setMaxWidth(Double.MAX_VALUE);
+		GridPane.setVgrow(textArea, Priority.ALWAYS);
+		GridPane.setHgrow(textArea, Priority.ALWAYS);
+
+		GridPane expanded = new GridPane();
+		expanded.setMaxWidth(Double.MAX_VALUE);
+		expanded.add(label, 0, 0);
+		expanded.add(textArea, 0, 1);
+
+		alert.getDialogPane().setContent(expanded);
+		alert.getDialogPane().setPrefWidth(700);
+		alert.getDialogPane().setPrefHeight(400);
+
+		return alert;
+	}
+
+	public static Alert buildException(Exception e) {
+		return buildException(e.getClass().getSimpleName() + " : " + e.getMessage(), e);
+	}
+
+	public static Alert buildException(String context, Exception e) {
+		Alert alert = new Alert(Alert.AlertType.ERROR, context);
+
+		StringWriter sw = new StringWriter();
+		PrintWriter pw = new PrintWriter(sw);
+
+		e.printStackTrace(pw);
+
+		String text = sw.toString();
+		Label label = new Label("Exception Stack Trace: ");
+
+		TextArea textArea = new TextArea(text);
+		textArea.setEditable(false);
+		textArea.setWrapText(false);
+
+		textArea.setMaxHeight(Double.MAX_VALUE);
+		textArea.setMaxWidth(Double.MAX_VALUE);
+		GridPane.setVgrow(textArea, Priority.ALWAYS);
+		GridPane.setHgrow(textArea, Priority.ALWAYS);
+
+		GridPane expanded = new GridPane();
+		expanded.setMaxWidth(Double.MAX_VALUE);
+		expanded.add(label, 0, 0);
+		expanded.add(textArea, 0, 1);
+
+		alert.getDialogPane().setContent(expanded);
+		alert.getDialogPane().setPrefWidth(800);
+		alert.getDialogPane().setPrefHeight(600);
+
+		return alert;
 	}
 
 }

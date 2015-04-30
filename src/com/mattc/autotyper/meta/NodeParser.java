@@ -7,8 +7,6 @@ import com.google.common.collect.Lists;
 import com.google.common.reflect.ClassPath;
 import com.google.common.reflect.ClassPath.ClassInfo;
 import com.mattc.autotyper.util.Console;
-import javafx.scene.Node;
-import javafx.scene.control.*;
 
 import java.io.IOException;
 import java.lang.reflect.Constructor;
@@ -16,6 +14,12 @@ import java.lang.reflect.InvocationTargetException;
 import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
+import javafx.scene.Node;
+import javafx.scene.control.Button;
+import javafx.scene.control.ComboBox;
+import javafx.scene.control.Label;
+import javafx.scene.control.TextField;
+import javafx.scene.control.ToggleButton;
 
 @FXCompatible
 public class NodeParser {
@@ -98,7 +102,7 @@ public class NodeParser {
 				final Class<?> klass = Class.forName(ci.getName());
 
 				final FXParseable anno = klass.getAnnotation(FXParseable.class);
-				if ((anno != null) && !Node.class.isAssignableFrom(klass)) throw new IllegalStateException("Non-Parseable Class tagged with @FXParseable! A Parseable Class is one that inherits from Node...");
+				if ((anno != null) && !Node.class.isAssignableFrom(klass)) throw new IllegalStateException("Non-Parseable Class tagged with @FXParseable! A Parseable Class is one that inherits of Node...");
 				if ((anno == null) || !Node.class.isAssignableFrom(klass)) {
 					continue;
 				}

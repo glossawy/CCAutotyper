@@ -6,7 +6,6 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.mattc.autotyper.Strings.Resources;
 import com.mattc.autotyper.util.Console;
-import javafx.util.Pair;
 
 import java.io.IOException;
 import java.util.Collections;
@@ -14,6 +13,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Properties;
+import javafx.util.Pair;
 
 public class ModeParser {
 

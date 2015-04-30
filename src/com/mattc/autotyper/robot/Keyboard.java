@@ -1,7 +1,6 @@
 package com.mattc.autotyper.robot;
 
 import com.mattc.autotyper.Parameters;
-import com.mattc.autotyper.gui.fx.FXGuiUtils;
 import com.mattc.autotyper.util.Console;
 
 import java.io.File;

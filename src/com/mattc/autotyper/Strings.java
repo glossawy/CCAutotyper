@@ -7,6 +7,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.util.ResourceBundle;
 
 /**
  * Enumerates all Strings used in this Program that should be altered. <br />
@@ -53,10 +54,20 @@ public class Strings {
 
     /** Creates Resource objects that represent the URL and Stream of various media */
 	public static final class Resources {
+
 		public static final String LICENSE = "com/mattc/autotyper/license";
 
+		public static Resource getLicense() {
+			return new Resource() {
+				@Override
+				public URL url() {
+					return Strings.class.getClassLoader().getResource(Resources.LICENSE);
+				}
+			};
+		}
+
         /** Get CSS File Resource found in com/mattc/autotyper/gui/fx/css package*/
-		public static final Resource getCSS(final String name) {
+		public static  Resource getCSS(final String name) {
 			return new Resource() {
 
 				@Override

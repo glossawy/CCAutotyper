@@ -12,7 +12,6 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.List;
 
-// TODO Implement a TypingMethodology that types as many unique characters at once as possible!
 /**
  * Needs Documentation
  *
@@ -102,7 +101,7 @@ class TypingMethodology extends BaseMethodology {
                         IOUtils.sleep(200);
 					}
 
-                    // Handle Scheduled Key Events from the NativeHooks Dispatch Thread
+                    // Handle Scheduled Key Events of the NativeHooks Dispatch Thread
                     while(!this.isScheduleEmpty())
                         keys.doType(this.nextScheduleKey());
 

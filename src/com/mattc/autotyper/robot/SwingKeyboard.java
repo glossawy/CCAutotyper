@@ -1,5 +1,7 @@
 package com.mattc.autotyper.robot;
 
+import static java.awt.event.KeyEvent.*;
+
 import com.mattc.autotyper.Autotyper;
 import com.mattc.autotyper.Parameters;
 import com.mattc.autotyper.meta.FXCompatible;
@@ -7,18 +9,19 @@ import com.mattc.autotyper.meta.SwingCompatible;
 import com.mattc.autotyper.util.Console;
 import org.jnativehook.keyboard.NativeKeyListener;
 
-import javax.imageio.ImageIO;
-import java.awt.*;
+import java.awt.AWTException;
+import java.awt.Rectangle;
+import java.awt.Robot;
+import java.awt.Toolkit;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
-
-import static java.awt.event.KeyEvent.*;
+import javax.imageio.ImageIO;
 
 /**
  * Mimics the Keyboard to a large extent. <br />
  * <br />
- * Makes extensive use of {@link java.awt.Robot}, JNativeHooks and switching between
+ * Makes extensive use of {@link Robot}, JNativeHooks and switching between
  * KeyboardMode's to mimic user input after being given a character, String or File.
  * To make use of JNativeHooks, Keyboard does implement {@link NativeKeyListener} but
  * must be manually registered. <br />

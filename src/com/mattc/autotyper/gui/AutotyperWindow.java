@@ -12,14 +12,29 @@ import com.mattc.autotyper.robot.Keyboard;
 import com.mattc.autotyper.robot.KeyboardMethodology;
 import com.mattc.autotyper.util.Console;
 import com.mattc.autotyper.util.IOUtils;
-import org.fife.ui.autocomplete.*;
+import org.fife.ui.autocomplete.AutoCompletion;
+import org.fife.ui.autocomplete.BasicCompletion;
+import org.fife.ui.autocomplete.Completion;
+import org.fife.ui.autocomplete.CompletionProvider;
+import org.fife.ui.autocomplete.DefaultCompletionProvider;
 import org.fife.ui.rtextarea.RTextArea;
 
-import javax.imageio.ImageIO;
-import javax.swing.*;
-import javax.swing.text.JTextComponent;
-import java.awt.*;
-import java.awt.event.*;
+import java.awt.Color;
+import java.awt.Container;
+import java.awt.Desktop;
+import java.awt.EventQueue;
+import java.awt.FlowLayout;
+import java.awt.Font;
+import java.awt.Image;
+import java.awt.Insets;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.awt.event.FocusEvent;
+import java.awt.event.FocusListener;
+import java.awt.event.ItemEvent;
+import java.awt.event.ItemListener;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 import java.io.File;
 import java.io.IOException;
 import java.net.URISyntaxException;
@@ -29,6 +44,22 @@ import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.prefs.Preferences;
+import javax.imageio.ImageIO;
+import javax.swing.BoxLayout;
+import javax.swing.ImageIcon;
+import javax.swing.JButton;
+import javax.swing.JFrame;
+import javax.swing.JLabel;
+import javax.swing.JMenu;
+import javax.swing.JMenuBar;
+import javax.swing.JOptionPane;
+import javax.swing.JPanel;
+import javax.swing.JRadioButton;
+import javax.swing.JTextField;
+import javax.swing.JToggleButton;
+import javax.swing.SwingConstants;
+import javax.swing.WindowConstants;
+import javax.swing.text.JTextComponent;
 
 /**
  * Main Window for a Swing Autotyper GUI <br />
@@ -56,7 +87,7 @@ public class AutotyperWindow extends JFrame implements GuiAccessor {
 	private MetaButtonGroup group;
 
 	public AutotyperWindow() {
-		super(Ref.TITLE + " | " + Ref.VERSION);
+		super(Ref.APP_NAME + " | " + Ref.VERSION);
 
 		// Initialize Preferences and Swing based Keyboard (we know FX won't work
 		this.keys = Keyboard.retrieveKeyboard(KeyboardMethodology.TYPING);

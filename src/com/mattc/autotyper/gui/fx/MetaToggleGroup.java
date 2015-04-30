@@ -2,11 +2,11 @@ package com.mattc.autotyper.gui.fx;
 
 import com.google.common.collect.Maps;
 import com.mattc.autotyper.meta.FXCompatible;
-import javafx.scene.control.Toggle;
-import javafx.scene.control.ToggleGroup;
 
 import java.util.Map;
 import java.util.Map.Entry;
+import javafx.scene.control.Toggle;
+import javafx.scene.control.ToggleGroup;
 
 @FXCompatible
 public class MetaToggleGroup extends ToggleGroup {

@@ -1,7 +1,3 @@
 Manifest-Version: 1.0
-Class-Path: lib/log4j-1.2.17.jar lib/JNativeHook.jar lib/guava-18.0.ja
- r lib/rsyntaxtextarea-2.5.6.jar lib/autocomplete-2.5.4.jar lib/joda-t
- ime-2.6.jar lib/de.huxhorn.lilith.3rdparty.junique-1.0.2.jar lib/jfxr
- t.jar
 Main-Class: com.mattc.autotyper.Autotyper
-
+Class-Path: lib/autocomplete-2.5.4.jar lib/de.huxhorn.lilith.3rdparty.junique-1.0.2.jar lib/guava-18.0.jar lib/JNativeHook.jar lib/joda-time-2.6.jar lib/log4j-1.2.17.jar lib/rsyntaxtextarea-2.5.6.jar

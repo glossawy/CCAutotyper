@@ -1,21 +1,25 @@
 package com.mattc.autotyper.gui.fx;
 
+import static com.mattc.autotyper.gui.fx.FXGuiUtils.makeAlwaysOnTop;
+
 import com.mattc.autotyper.Strings;
 import com.mattc.autotyper.meta.FXCompatible;
 import com.mattc.autotyper.meta.ModeParser;
 import com.mattc.autotyper.meta.ModeParser.Mode;
 import com.mattc.autotyper.util.Console;
 import com.mattc.autotyper.util.IOUtils;
-import javafx.beans.value.ChangeListener;
-import javafx.beans.value.ObservableValue;
+
+import java.io.File;
+import java.io.IOException;
+import java.util.prefs.Preferences;
+import javafx.application.Platform;
 import javafx.collections.FXCollections;
-import javafx.event.ActionEvent;
-import javafx.event.EventHandler;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
+import javafx.scene.control.ButtonBar;
 import javafx.scene.control.ComboBox;
 import javafx.scene.input.Clipboard;
 import javafx.scene.input.ClipboardContent;
@@ -29,12 +33,6 @@ import javafx.stage.Stage;
 import javafx.stage.StageStyle;
 import javafx.stage.Window;
 
-import java.io.File;
-import java.io.IOException;
-import java.util.prefs.Preferences;
-
-import static com.mattc.autotyper.gui.fx.FXGuiUtils.makeAlwaysOnTop;
-
 @FXCompatible
 public class FXConfirmDialog extends Stage {
 
@@ -44,11 +42,11 @@ public class FXConfirmDialog extends Stage {
 	private volatile boolean approved = false;
 
 	/**
-	 * a template for editing code - this can be changed to any template derived from
+	 * a template for editing code - this can be changed to any template derived of
 	 * the supported modes at http://codemirror.net to allow syntax highlighted
 	 * editing of a wide variety of languages.
 	 */
-	private final String editingTemplate = "<!doctype html>" + "<html>" + "<head>" + " <link rel=\"stylesheet\" href=\"http://codemirror.net/lib/codemirror.css\">" + " <link rel=\"stylesheet\" href=\"http://codemirror.net/theme/neat.css\">" + " <link rel=\"stylesheet\" href=\"http://codemirror.net/theme/blackboard.css\">" + " <script src=\"http://codemirror.net/lib/codemirror.js\"></script>" + " <script src=\"http://codemirror.net/mode/clike/clike.js\"></script>" + " <script src=\"http://codemirror.net/mode/%1$s/%1$s.js\"></script>" + "</head>" + "<body>" + "<form><textarea id=\"code\" name=\"code\">\n" + "%2$s" + "</textarea></form>" + "<script>" + " var editor = CodeMirror.fromTextArea(document.getElementById(\"code\"), {" + " lineNumbers: true," + " matchBrackets: true," + " theme: \"%3$s\"," + " mode: \"%4$s\"," + " readOnly: true" + " });" + "</script>" + "</body>" + "</html>";
+	private static final String EDITING_TEMPLATE = "<!doctype html>" + "<html>" + "<head>" + " <link rel=\"stylesheet\" href=\"http://codemirror.net/lib/codemirror.css\">" + " <link rel=\"stylesheet\" href=\"http://codemirror.net/theme/neat.css\">" + " <link rel=\"stylesheet\" href=\"http://codemirror.net/theme/blackboard.css\">" + " <script src=\"http://codemirror.net/lib/codemirror.js\"></script>" + " <script src=\"http://codemirror.net/mode/clike/clike.js\"></script>" + " <script src=\"http://codemirror.net/mode/%1$s/%1$s.js\"></script>" + "</head>" + "<body>" + "<form><textarea id=\"code\" name=\"code\">\n" + "%2$s" + "</textarea></form>" + "<script>" + " var editor = CodeMirror.fromTextArea(document.getElementById(\"code\"), {" + " lineNumbers: true," + " matchBrackets: true," + " theme: \"%3$s\"," + " mode: \"%4$s\"," + " readOnly: true" + " });" + "</script>" + "</body>" + "</html>";
 
 	private String codeSnapshot;
 	private String theme = "neat";
@@ -117,41 +115,43 @@ public class FXConfirmDialog extends Stage {
 		approve.setPrefWidth(BUTTON_WIDTH);
 		reject.setPrefWidth(BUTTON_WIDTH);
 
+		ButtonBar buttonBar = new ButtonBar();
+		buttonBar.getButtons().addAll(approve, reject);
+		ButtonBar.setButtonData(approve, ButtonBar.ButtonData.YES);
+		ButtonBar.setButtonData(reject, ButtonBar.ButtonData.NO);
+
+		approve.setDefaultButton(true);
+
 		btnBox.setId("button-box");
 		btnBox.setAlignment(Pos.BASELINE_CENTER);
 		btnBox.setPadding(new Insets(10, 0, 10, 0));
-		btnBox.getChildren().addAll(approve, reject);
+		btnBox.getChildren().addAll(buttonBar);
 
 		final VBox webBox = new VBox();
 		webBox.getChildren().add(this.webView);
 
 		final HBox optBox = new HBox(20);
 		final Button cpyBtn = new Button("Copy Code");
-		final ComboBox<String> themeColor = new ComboBox<String>(FXCollections.observableArrayList("neat", "blackboard"));
-		final ComboBox<String> syntaxes = new ComboBox<String>(FXCollections.observableList(ModeParser.getPossibleModes()));
+		final ComboBox<String> themeColor = new ComboBox<>(FXCollections.observableArrayList("neat", "blackboard"));
+		final ComboBox<String> syntaxes = new ComboBox<>(FXCollections.observableList(ModeParser.getPossibleModes()));
 
 		syntaxes.getSelectionModel().select(this.mode.displayName);
 		themeColor.getSelectionModel().select(this.theme);
 		cpyBtn.setPrefWidth(BUTTON_WIDTH);
 
-		syntaxes.getSelectionModel().selectedItemProperty().addListener(new ChangeListener<String>() {
-			@Override
-			public void changed(ObservableValue<? extends String> observable, String oldValue, String newValue) {
-				if (newValue == null) return;
+		syntaxes.getSelectionModel().selectedItemProperty().addListener((obs, oldValue, newValue) -> {
+			if (newValue == null)
+				return;
 
-				FXConfirmDialog.this.mode = ModeParser.getModeFor(newValue);
-				FXConfirmDialog.this.webView.getEngine().loadContent(getFormattedTemplate());
-			}
+			FXConfirmDialog.this.mode = ModeParser.getModeFor(newValue);
+			FXConfirmDialog.this.webView.getEngine().loadContent(getFormattedTemplate());
 		});
 
-		themeColor.getSelectionModel().selectedItemProperty().addListener(new ChangeListener<String>() {
-			@Override
-			public void changed(ObservableValue<? extends String> observable, String oldValue, String newValue) {
-				if (newValue == null) return;
+		themeColor.getSelectionModel().selectedItemProperty().addListener((obs, oldValue, newValue) -> {
+			if (newValue == null) return;
 
-				FXConfirmDialog.this.theme = newValue;
-				FXConfirmDialog.this.webView.getEngine().loadContent(getFormattedTemplate());
-			}
+			FXConfirmDialog.this.theme = newValue;
+			FXConfirmDialog.this.webView.getEngine().loadContent(getFormattedTemplate());
 		});
 
 		optBox.setId("menu-bar");
@@ -165,34 +165,24 @@ public class FXConfirmDialog extends Stage {
 		VBox.setVgrow(this.webView, Priority.ALWAYS);
 
 		syntaxes.setEditable(false);
-		approve.setOnAction(new EventHandler<ActionEvent>() {
-			@Override
-			public void handle(ActionEvent event) {
-				FXConfirmDialog.this.approved = true;
-				hide();
-			}
+		approve.setOnAction((e) -> {
+			FXConfirmDialog.this.approved = true;
+			hide();
 		});
 
-		reject.setOnAction(new EventHandler<ActionEvent>() {
-			@Override
-			public void handle(ActionEvent event) {
-				FXConfirmDialog.this.approved = false;
-				hide();
-			}
+		reject.setOnAction((e) -> {
+			FXConfirmDialog.this.approved = false;
+			hide();
 		});
 
-		cpyBtn.setOnAction(new EventHandler<ActionEvent>() {
+		cpyBtn.setOnAction((e) -> {
+			final String code = getCodeAndSnapshot();
 
-			@Override
-			public void handle(ActionEvent event) {
-				final String code = getCodeAndSnapshot();
+			final Clipboard clip = Clipboard.getSystemClipboard();
+			final ClipboardContent content = new ClipboardContent();
 
-				final Clipboard clip = Clipboard.getSystemClipboard();
-				final ClipboardContent content = new ClipboardContent();
-
-				content.putString(code);
-				clip.setContent(content);
-			}
+			content.putString(code);
+			Platform.runLater(() -> clip.setContent(content));
 		});
 
 		return root;
@@ -209,16 +199,12 @@ public class FXConfirmDialog extends Stage {
 		return this.codeSnapshot;
 	}
 
-	public void revertChanges() {
-		refresh();
-	}
-
 	public boolean isApproved() {
 		return this.approved;
 	}
 
 	private String getFormattedTemplate() {
-		return String.format(this.editingTemplate, this.mode.name, this.codeSnapshot, this.theme, this.mode.mimeType);
+		return String.format(EDITING_TEMPLATE, this.mode.name, this.codeSnapshot, this.theme, this.mode.mimeType);
 	}
 
 	private void refresh() {

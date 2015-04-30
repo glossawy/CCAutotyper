@@ -1,7 +1,11 @@
 package com.mattc.autotyper.gui;
 
 import com.mattc.autotyper.Downloader;
-import com.mattc.autotyper.meta.*;
+import com.mattc.autotyper.meta.ExceptionHandler;
+import com.mattc.autotyper.meta.FXCompatible;
+import com.mattc.autotyper.meta.ImpossibleInputException;
+import com.mattc.autotyper.meta.Outcome;
+import com.mattc.autotyper.meta.SwingCompatible;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -10,7 +14,7 @@ import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 
 /**
- * Handles downloading and obtaining files from different locations on different
+ * Handles downloading and obtaining files of different locations on different
  * formats. Including Web, Pastebin and URL. Also can Auto-Detect based on a string
  * using the {@link #canHandle(String) canHandle} method in each LocationHandler.
  * 
@@ -158,7 +162,7 @@ public enum LocationHandler {
 	/**
 	 * Takes an object and determines the LocationHandler to use using the
 	 * {@link #canHandle(String) canHandle} method. <br />
-	 * this differs from the {@link #detect(String, ExceptionHandler) other} version
+	 * this differs of the {@link #detect(String, ExceptionHandler) other} version
 	 * of this method by defaulting to an {@link ExceptionHandler} that just consumes
 	 * Exceptions.
 	 * 

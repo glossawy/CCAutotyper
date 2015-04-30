@@ -2,11 +2,11 @@ package com.mattc.autotyper.gui.fx;
 
 import com.mattc.autotyper.robot.Keyboard;
 import com.mattc.autotyper.util.IOUtils;
+
+import java.io.File;
 import javafx.beans.property.IntegerProperty;
 import javafx.beans.property.ObjectProperty;
 import javafx.concurrent.Task;
-
-import java.io.File;
 
 /**
  * Needs Documentation
