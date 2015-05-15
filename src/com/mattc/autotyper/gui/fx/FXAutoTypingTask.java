@@ -1,12 +1,12 @@
 package com.mattc.autotyper.gui.fx;
 
-import com.mattc.autotyper.robot.Keyboard;
-import com.mattc.autotyper.util.IOUtils;
-
-import java.io.File;
 import javafx.beans.property.IntegerProperty;
 import javafx.beans.property.ObjectProperty;
 import javafx.concurrent.Task;
+import com.mattc.autotyper.robot.Keyboard;
+import com.mattc.autotyper.util.IOUtils;
+
+import java.nio.file.Path;
 
 /**
  * Needs Documentation
@@ -17,11 +17,11 @@ import javafx.concurrent.Task;
 public class FXAutoTypingTask extends Task<Boolean> {
 
     private final Keyboard keys;
-    private final ObjectProperty<File> file;
+    private final ObjectProperty<Path> file;
     private final IntegerProperty wait, inputDelay;
     private final Runnable prestart;
 
-    public FXAutoTypingTask(Keyboard keys, ObjectProperty<File> fileProperty, IntegerProperty wait, IntegerProperty inputDelay, Runnable prestart) {
+    public FXAutoTypingTask(Keyboard keys, ObjectProperty<Path> fileProperty, IntegerProperty wait, IntegerProperty inputDelay, Runnable prestart) {
         this.keys = keys;
         this.file = fileProperty;
         this.wait = wait;
@@ -34,7 +34,7 @@ public class FXAutoTypingTask extends Task<Boolean> {
         prestart.run();
         keys.setInputDelay(inputDelay.get());
         IOUtils.sleep(wait.get());
-        keys.typeFile(file.get());
+        keys.typeFile(file.get().toFile());
         return true;
     }
 }

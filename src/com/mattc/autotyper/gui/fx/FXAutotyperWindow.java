@@ -3,33 +3,6 @@ package com.mattc.autotyper.gui.fx;
 import static javafx.scene.input.KeyCombination.ModifierValue.DOWN;
 import static javafx.scene.input.KeyCombination.ModifierValue.UP;
 
-import com.google.common.base.Charsets;
-import com.google.common.collect.EvictingQueue;
-import com.google.common.collect.Lists;
-import com.google.common.collect.Sets;
-import com.google.common.hash.HashCode;
-import com.google.common.hash.HashFunction;
-import com.google.common.hash.Hashing;
-import com.mattc.autotyper.AppVersion;
-import com.mattc.autotyper.Autotyper;
-import com.mattc.autotyper.Ref;
-import com.mattc.autotyper.Strings;
-import com.mattc.autotyper.Strings.Resources;
-import com.mattc.autotyper.Strings.Resources.Resource;
-import com.mattc.autotyper.gui.ConfirmFileDialog;
-import com.mattc.autotyper.gui.GuiAccessor;
-import com.mattc.autotyper.gui.LocationHandler;
-import com.mattc.autotyper.meta.Outcome;
-import com.mattc.autotyper.robot.Keyboard;
-import com.mattc.autotyper.robot.KeyboardMethodology;
-import com.mattc.autotyper.util.Console;
-import com.mattc.autotyper.util.OS;
-
-import java.io.File;
-import java.io.IOException;
-import java.util.Set;
-import java.util.prefs.BackingStoreException;
-import java.util.prefs.Preferences;
 import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.beans.property.IntegerProperty;
@@ -62,374 +35,403 @@ import javafx.scene.layout.StackPane;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
 import javafx.stage.StageStyle;
+import com.google.common.base.Charsets;
+import com.google.common.collect.EvictingQueue;
+import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
+import com.google.common.hash.HashCode;
+import com.google.common.hash.HashFunction;
+import com.google.common.hash.Hashing;
+import com.mattc.autotyper.AppVersion;
+import com.mattc.autotyper.Autotyper;
+import com.mattc.autotyper.Ref;
+import com.mattc.autotyper.Strings;
+import com.mattc.autotyper.Strings.Resources;
+import com.mattc.autotyper.Strings.Resources.Resource;
+import com.mattc.autotyper.gui.ConfirmFileDialog;
+import com.mattc.autotyper.gui.GuiAccessor;
+import com.mattc.autotyper.gui.LocationHandler;
+import com.mattc.autotyper.meta.Outcome;
+import com.mattc.autotyper.robot.Keyboard;
+import com.mattc.autotyper.robot.KeyboardMethodology;
+import com.mattc.autotyper.util.Console;
+import com.mattc.autotyper.util.OS;
+
+import java.io.IOException;
+import java.nio.file.Path;
+import java.util.Set;
+import java.util.prefs.BackingStoreException;
+import java.util.prefs.Preferences;
 
 // TODO Split into more manageable objects
 
 public class FXAutotyperWindow extends Application {
 
-    /** Meta Key for Rank in MetaToggleGroup */
-	private static final String META_RANK = "RANK";
-	private static FXAutotyperWindow INSTANCE;
+    /**
+     * Meta Key for Rank in MetaToggleGroup
+     */
+    private static final String META_RANK = "RANK";
+    private static FXAutotyperWindow INSTANCE;
 
-	private final Preferences prefs = Preferences.userNodeForPackage(FXAutotyperWindow.class);
-	private final EvictingQueue<String> locations = EvictingQueue.create(50);
+    private final Preferences prefs = Preferences.userNodeForPackage(FXAutotyperWindow.class);
+    private final EvictingQueue<String> locations = EvictingQueue.create(50);
 
-	private Keyboard keys;
+    private Keyboard keys;
     private Stage primaryStage;
 
-    private final ObjectProperty<File> fileProperty = new SimpleObjectProperty<>();
+    private final ObjectProperty<Path> fileProperty = new SimpleObjectProperty<>();
     private final IntegerProperty inputDelayProperty = new SimpleIntegerProperty(40);
     private final IntegerProperty waitTimeProperty = new SimpleIntegerProperty(5000);
 
-	private boolean doConfirm;
-	private volatile boolean doSave = false;
-	private int curRank;
+    private boolean doConfirm;
+    private volatile boolean doSave = false;
+    private int curRank;
 
-	@Override
-	public void start(final Stage primaryStage) throws Exception {
-		try {
-			if (INSTANCE != null) throw new IllegalStateException("Multiple Instances of FXAutotyperWindow!");
+    @Override
+    public void start(final Stage primaryStage) throws Exception {
+        try {
+            if (INSTANCE != null) throw new IllegalStateException("Multiple Instances of FXAutotyperWindow!");
 
-			Thread.currentThread().setName("FX_GUI");
-			FXAutotyperWindow.INSTANCE = this;
-			this.primaryStage = primaryStage;
+            Thread.currentThread().setName("FX_GUI");
+            FXAutotyperWindow.INSTANCE = this;
+            this.primaryStage = primaryStage;
 
-			// Load Preferences and obtain proper Keyboard
-			loadPrefs();
-			obtainKeyboard();
+            // Load Preferences and obtain proper Keyboard
+            loadPrefs();
+            obtainKeyboard();
 
-			// Initialize Parent Nodes
-			final BorderPane root = new BorderPane();
-			final StackPane gridStack = new StackPane();
-			final GridPane grid = new GridPane();
-			grid.setGridLinesVisible(false);
-			grid.setHgap(5);
-			grid.setVgap(5);
+            // Initialize Parent Nodes
+            final BorderPane root = new BorderPane();
+            final StackPane gridStack = new StackPane();
+            final GridPane grid = new GridPane();
+            grid.setGridLinesVisible(false);
+            grid.setHgap(5);
+            grid.setVgap(5);
 
-			gridStack.getChildren().add(grid);
+            gridStack.getChildren().add(grid);
 
-			// Initialize Button Bar
-			final StackPane buttonStack = new StackPane();
-			final HBox buttonBox = new HBox(10);
-			final MetaToggleGroup btnGroup = new MetaToggleGroup();
-			final Button startBtn = new Button("Start");
-			final RadioButton fileBtn = new RadioButton("File");
-			final RadioButton urlBtn = new RadioButton("URL");
-			final RadioButton pasteBtn = new RadioButton("Paste");
-			final RadioButton autoBtn = new RadioButton("Auto");
-			MetaToggleGroup.addTogglesToGroup(btnGroup, fileBtn, Strings.GHOST_TEXT_FSELECT, urlBtn, Strings.GHOST_TEXT_USELECT, pasteBtn, Strings.GHOST_TEXT_PSELECT, autoBtn, Strings.GHOST_TEXT_ASELECT);
-			btnGroup.putProperty(fileBtn, META_RANK, 1);
-			btnGroup.putProperty(urlBtn, META_RANK, 2);
-			btnGroup.putProperty(pasteBtn, META_RANK, 3);
-			btnGroup.putProperty(autoBtn, META_RANK, 4);
-			btnGroup.setSelectedForProperty(META_RANK, this.curRank);
+            // Initialize Button Bar
+            final StackPane buttonStack = new StackPane();
+            final HBox buttonBox = new HBox(10);
+            final MetaToggleGroup btnGroup = new MetaToggleGroup();
+            final Button startBtn = new Button("Start");
+            final RadioButton fileBtn = new RadioButton("File");
+            final RadioButton urlBtn = new RadioButton("URL");
+            final RadioButton pasteBtn = new RadioButton("Paste");
+            final RadioButton autoBtn = new RadioButton("Auto");
+            MetaToggleGroup.addTogglesToGroup(btnGroup, fileBtn, Strings.GHOST_TEXT_FSELECT, urlBtn, Strings.GHOST_TEXT_USELECT, pasteBtn, Strings.GHOST_TEXT_PSELECT, autoBtn, Strings.GHOST_TEXT_ASELECT);
+            btnGroup.putProperty(fileBtn, META_RANK, 1);
+            btnGroup.putProperty(urlBtn, META_RANK, 2);
+            btnGroup.putProperty(pasteBtn, META_RANK, 3);
+            btnGroup.putProperty(autoBtn, META_RANK, 4);
+            btnGroup.setSelectedForProperty(META_RANK, this.curRank);
 
-			buttonStack.setAlignment(Pos.BASELINE_LEFT);
-			StackPane.setAlignment(startBtn, Pos.BASELINE_RIGHT);
+            buttonStack.setAlignment(Pos.BASELINE_LEFT);
+            StackPane.setAlignment(startBtn, Pos.BASELINE_RIGHT);
 
-			startBtn.setPrefSize(50, 20);
-			buttonBox.getChildren().addAll(fileBtn, urlBtn, pasteBtn, autoBtn);
-			buttonStack.setId("button-box");
-			buttonStack.setPadding(new Insets(15, 25, 15, 25));
-			buttonStack.getChildren().addAll(buttonBox, startBtn);
-			startBtn.setDefaultButton(true);
+            startBtn.setPrefSize(50, 20);
+            buttonBox.getChildren().addAll(fileBtn, urlBtn, pasteBtn, autoBtn);
+            buttonStack.setId("button-box");
+            buttonStack.setPadding(new Insets(15, 25, 15, 25));
+            buttonStack.getChildren().addAll(buttonBox, startBtn);
+            startBtn.setDefaultButton(true);
 
-			// Initialize the Grid
+            // Initialize the Grid
 
-			final HBox locBox = new HBox(5);
-			final Label locLabel = new Label("Location:");
+            final HBox locBox = new HBox(5);
+            final Label locLabel = new Label("Location:");
 
-			final AutoCompleteTextField locField = new AutoCompleteTextField(Lists.newArrayList(locations));
-			final InteractiveBox wBox = new InteractiveBox("Wait %t seconds before typing.", Pos.CENTER);
-			final InteractiveBox iBox = new InteractiveBox("Wait %t milliseconds between keystrokes.", Pos.CENTER);
-			final InteractiveBox cBox = new InteractiveBox("I %B want to confirm before typing.", Pos.CENTER);
-			final TextField wField = wBox.getInteractiveChild(0, TextField.class);
-			final TextField iField = iBox.getInteractiveChild(0, TextField.class);
-			final ToggleButton cBtn = cBox.getInteractiveChild(0, ToggleButton.class);
+            final AutoCompleteTextField locField = new AutoCompleteTextField(Lists.newArrayList(locations));
+            final InteractiveBox wBox = new InteractiveBox("Wait %t seconds before typing.", Pos.CENTER);
+            final InteractiveBox iBox = new InteractiveBox("Wait %t milliseconds between keystrokes.", Pos.CENTER);
+            final InteractiveBox cBox = new InteractiveBox("I %B want to confirm before typing.", Pos.CENTER);
+            final TextField wField = wBox.getInteractiveChild(0, TextField.class);
+            final TextField iField = iBox.getInteractiveChild(0, TextField.class);
+            final ToggleButton cBtn = cBox.getInteractiveChild(0, ToggleButton.class);
 
-			wField.setPrefColumnCount(2);
-			wField.setAlignment(Pos.CENTER);
-			wField.setText(Integer.toString(this.waitTimeProperty.get() / 1000));
-			iField.setPrefColumnCount(2);
-			iField.setAlignment(Pos.CENTER);
-			iField.setText(Integer.toString(this.inputDelayProperty.get()));
-			locField.setPrefColumnCount(32);
-			locField.setPromptText(btnGroup.getMetaStringForSelected());
-			cBtn.setSelected(this.doConfirm);
+            wField.setPrefColumnCount(2);
+            wField.setAlignment(Pos.CENTER);
+            wField.setText(Integer.toString(this.waitTimeProperty.get() / 1000));
+            iField.setPrefColumnCount(2);
+            iField.setAlignment(Pos.CENTER);
+            iField.setText(Integer.toString(this.inputDelayProperty.get()));
+            locField.setPrefColumnCount(32);
+            locField.setPromptText(btnGroup.getMetaStringForSelected());
+            cBtn.setSelected(this.doConfirm);
 
-			locBox.getChildren().addAll(locLabel, locField);
+            locBox.getChildren().addAll(locLabel, locField);
 
-			FXGuiUtils.setMaxCharCount(wField, 2);
-			FXGuiUtils.setMaxCharCount(iField, 3);
-			FXGuiUtils.setToggleTextSwitch(cBtn, "do", "do not");
+            FXGuiUtils.setMaxCharCount(wField, 2);
+            FXGuiUtils.setMaxCharCount(iField, 3);
+            FXGuiUtils.setToggleTextSwitch(cBtn, "do", "do not");
 
-			btnGroup.selectedToggleProperty().addListener((obs, oldValue, newValue) -> {
-				locField.setPromptText(btnGroup.getMetaString(newValue));
-				FXAutotyperWindow.this.curRank = btnGroup.getMetaForSelected(META_RANK, Integer.class);
-			});
+            btnGroup.selectedToggleProperty().addListener((obs, oldValue, newValue) -> {
+                locField.setPromptText(btnGroup.getMetaString(newValue));
+                FXAutotyperWindow.this.curRank = btnGroup.getMetaForSelected(META_RANK, Integer.class);
+            });
 
-			wField.textProperty().addListener((obs, oldValue, newValue) -> {
-				if (newValue.trim().isEmpty()) {
-					FXAutotyperWindow.this.waitTimeProperty.set(1000);
-				} else if (!isValid(newValue)) {
-					wField.setText(oldValue);
-				} else {
-					FXAutotyperWindow.this.waitTimeProperty.set(Integer.parseInt(newValue) * 1000);
-				}
-			});
+            wField.textProperty().addListener((obs, oldValue, newValue) -> {
+                if (newValue.trim().isEmpty()) {
+                    FXAutotyperWindow.this.waitTimeProperty.set(1000);
+                } else if (!isValid(newValue)) {
+                    wField.setText(oldValue);
+                } else {
+                    FXAutotyperWindow.this.waitTimeProperty.set(Integer.parseInt(newValue) * 1000);
+                }
+            });
 
-			iField.textProperty().addListener((obs, ov, nv) -> {
-				if (nv.trim().isEmpty()) {
-					FXAutotyperWindow.this.inputDelayProperty.set(com.mattc.autotyper.Parameters.MIN_DELAY);
-				} else if (!isValid(nv)) {
-					iField.setText(ov);
-				} else {
-					int value = Integer.parseInt(nv);
-					FXAutotyperWindow.this.inputDelayProperty.set(Math.max(value, com.mattc.autotyper.Parameters.MIN_DELAY));
-				}
-			});
+            iField.textProperty().addListener((obs, ov, nv) -> {
+                if (nv.trim().isEmpty()) {
+                    FXAutotyperWindow.this.inputDelayProperty.set(com.mattc.autotyper.Parameters.MIN_DELAY);
+                } else if (!isValid(nv)) {
+                    iField.setText(ov);
+                } else {
+                    int value = Integer.parseInt(nv);
+                    FXAutotyperWindow.this.inputDelayProperty.set(Math.max(value, com.mattc.autotyper.Parameters.MIN_DELAY));
+                }
+            });
 
-			// When we lose foucs, check value to display at least the minimum delay
-			iField.focusedProperty().addListener((obs, ov, nv) -> {
-				if (nv || !isValid(iField.getText()))
-					return;
+            // When we lose foucs, check value to display at least the minimum delay
+            iField.focusedProperty().addListener((obs, ov, nv) -> {
+                if (nv || !isValid(iField.getText()))
+                    return;
 
-				int val = Integer.parseInt(iField.getText());
-				if (val < com.mattc.autotyper.Parameters.MIN_DELAY) {
-					iField.setText(String.valueOf(com.mattc.autotyper.Parameters.MIN_DELAY));
-					inputDelayProperty.set(com.mattc.autotyper.Parameters.MIN_DELAY);
-				}
-			});
+                int val = Integer.parseInt(iField.getText());
+                if (val < com.mattc.autotyper.Parameters.MIN_DELAY) {
+                    iField.setText(String.valueOf(com.mattc.autotyper.Parameters.MIN_DELAY));
+                    inputDelayProperty.set(com.mattc.autotyper.Parameters.MIN_DELAY);
+                }
+            });
 
-			cBtn.selectedProperty().addListener((obs, oldValue, newValue) -> FXAutotyperWindow.this.doConfirm = newValue);
+            cBtn.selectedProperty().addListener((obs, oldValue, newValue) -> FXAutotyperWindow.this.doConfirm = newValue);
 
-			startBtn.setOnAction(new EventHandler<ActionEvent>() {
-				Task<Boolean> typerTask;
+            startBtn.setOnAction(new EventHandler<ActionEvent>() {
+                Task<Boolean> typerTask;
 
-				@Override
-				public void handle(ActionEvent event) {
-					final String text = locField.getText().trim();
+                @Override
+                public void handle(ActionEvent event) {
+                    final String text = locField.getText().trim();
 
-					if (text.length() == 0) {
-						showError("Some Text Must be Entered!");
-					} else if ((typerTask != null) && typerTask.isRunning()) {
-						showError("Cannot run two simultaneous jobs! Please wait for the other to terminate...");
-					} else {
-						typerTask = makeTask();
-						btnGroup.getSelectedToggle();
-						LocationHandler handler;
-						Outcome outcome;
+                    if (text.length() == 0) {
+                        showError("Some Text Must be Entered!");
+                    } else if ((typerTask != null) && typerTask.isRunning()) {
+                        showError("Cannot run two simultaneous jobs! Please wait for the other to terminate...");
+                    } else {
+                        typerTask = makeTask();
+                        btnGroup.getSelectedToggle();
+                        LocationHandler handler;
+                        Outcome outcome;
 
-						if (fileBtn.isSelected()) {
-							handler = LocationHandler.FILE;
-						} else if (urlBtn.isSelected()) {
-							handler = LocationHandler.URL;
-						} else if (pasteBtn.isSelected()) {
-							handler = LocationHandler.PASTEBIN;
-						} else {
-							try {
-								handler = LocationHandler.detect(text);
-							} catch (final Exception e1) {
-								Console.debug(e1);
-								showError(String.format("Could Not Auto-Detect Location:%n%s", e1.getMessage()));
-								return;
-							}
-						}
-
-						// Isolate Useful URI
-						final String textNoTag;
-						if (text.startsWith(handler.tag()))
-							textNoTag = text.substring(text.indexOf(':') + 1).trim();
-						else
-							textNoTag = text;
-
-						outcome = handler.canHandle(textNoTag);
-
-						if (outcome.isFailure()) {
-							showError(outcome.reason);
-						} else {
-							final File file = handler.handle(textNoTag);
-							try {
-								if (FXAutotyperWindow.this.doConfirm) if (!approve(file)) return;
-
-								fileProperty.set(file);
-
-								int seconds = (FXAutotyperWindow.this.waitTimeProperty.get() / 1000);
-								ButtonType[] types = new ButtonType[]{ButtonType.YES, ButtonType.NO};
-								Alert alert = new Alert(Alert.AlertType.CONFIRMATION, "Start Autotyping in " + seconds + " seconds?\n\nAll windows will be hidden until the task is complete...", types);
-								alert.initOwner(FXAutotyperWindow.this.primaryStage);
-								alert.initModality(Modality.APPLICATION_MODAL);
-								alert.initStyle(StageStyle.DECORATED);
-
-								alert.getDialogPane().setPrefSize(420, 200);
-
-								alert.setOnHidden((e) -> {
-									if (alert.getResult() == ButtonType.YES) {
-										Platform.runLater(typerTask);
-										if (saveToHistory(textNoTag, handler.tag()))
-											locField.addData(handler.tag() + textNoTag);
-									}
-								});
-
-								alert.show();
+                        if (fileBtn.isSelected()) {
+                            handler = LocationHandler.FILE;
+                        } else if (urlBtn.isSelected()) {
+                            handler = LocationHandler.URL;
+                        } else if (pasteBtn.isSelected()) {
+                            handler = LocationHandler.PASTEBIN;
+                        } else {
+                            try {
+                                handler = LocationHandler.detect(text);
                             } catch (final Exception e1) {
-								Console.exception(e1);
-							}
-						}
-					}
+                                Console.debug(e1);
+                                showError(String.format("Could Not Auto-Detect Location:%n%s", e1.getMessage()));
+                                return;
+                            }
+                        }
 
-				}
+                        // Isolate Useful URI
+                        final String textNoTag;
+                        if (text.startsWith(handler.tag()))
+                            textNoTag = text.substring(text.indexOf(':') + 1).trim();
+                        else
+                            textNoTag = text;
 
-				private void prestart() {
-					setInputDisabled(true);
-					primaryStage.hide();
-				}
+                        outcome = handler.canHandle(textNoTag);
 
-				private void onSuccess(WorkerStateEvent e) {
-					setInputDisabled(false);
-					primaryStage.show();
-					showMessage("Autotyping Complete!");
-				}
+                        if (outcome.isFailure()) {
+                            showError(outcome.reason);
+                        } else {
+                            final Path file = handler.handle(textNoTag);
+                            try {
+                                if (FXAutotyperWindow.this.doConfirm) if (!approve(file)) return;
 
-				private void onError(WorkerStateEvent e) {
-					setInputDisabled(false);
-					primaryStage.show();
-					Console.exception(e.getSource().getException());
-					showError("Autotyping Failed!: " + e.getSource().getException().getMessage());
-				}
+                                fileProperty.set(file);
 
-				private void setInputDisabled(boolean state) {
-					locField.setDisable(state);
-					wField.setDisable(state);
-					iField.setDisable(state);
-					cBtn.setDisable(state);
-				}
+                                int seconds = (FXAutotyperWindow.this.waitTimeProperty.get() / 1000);
+                                ButtonType[] types = new ButtonType[]{ButtonType.YES, ButtonType.NO};
+                                Alert alert = new Alert(Alert.AlertType.CONFIRMATION, "Start Autotyping in " + seconds + " seconds?\n\nAll windows will be hidden until the task is complete...", types);
+                                alert.initOwner(FXAutotyperWindow.this.primaryStage);
+                                alert.initModality(Modality.APPLICATION_MODAL);
+                                alert.initStyle(StageStyle.DECORATED);
 
-				private Task<Boolean> makeTask() {
-					Task<Boolean> task = new FXAutoTypingTask(keys, fileProperty, waitTimeProperty, inputDelayProperty, this::prestart);
-					task.setOnSucceeded(this::onSuccess);
-					task.setOnFailed(this::onError);
+                                alert.getDialogPane().setPrefSize(420, 200);
 
-					return task;
-				}
+                                alert.setOnHidden((e) -> {
+                                    if (alert.getResult() == ButtonType.YES) {
+                                        Platform.runLater(typerTask);
+                                        if (saveToHistory(textNoTag, handler.tag()))
+                                            locField.addData(handler.tag() + textNoTag);
+                                    }
+                                });
 
-			});
+                                alert.show();
+                            } catch (final Exception e1) {
+                                Console.exception(e1);
+                            }
+                        }
+                    }
 
-			// Put it all together
+                }
 
-			// I have to admit all those constant numbers just look reallllly annoying.
-			grid.add(wBox, 0, 0, 1, 1);
-			grid.add(iBox, 0, 1, 1, 1);
-			grid.add(cBox, 0, 2, 1, 1);
-			grid.add(locBox, 0, 3, 1, 1);
-			grid.setAlignment(Pos.CENTER);
+                private void prestart() {
+                    setInputDisabled(true);
+                    primaryStage.hide();
+                }
 
-			root.setTop(getMenuBar());
-			root.setBottom(buttonStack);
-			root.setCenter(gridStack);
+                private void onSuccess(WorkerStateEvent e) {
+                    setInputDisabled(false);
+                    primaryStage.show();
+                    showMessage("Autotyping Complete!");
+                }
 
-			final Scene scene;
+                private void onError(WorkerStateEvent e) {
+                    setInputDisabled(false);
+                    primaryStage.show();
+                    Console.exception(e.getSource().getException());
+                    showError("Autotyping Failed!: " + e.getSource().getException().getMessage());
+                }
 
-			if(OS.get() == OS.WINDOWS) {
-				scene = new Scene(root, 450, 250);
-			} else {
-				scene = new Scene(root, 600, 250);
-			}
+                private void setInputDisabled(boolean state) {
+                    locField.setDisable(state);
+                    wField.setDisable(state);
+                    iField.setDisable(state);
+                    cBtn.setDisable(state);
+                }
 
-			scene.getStylesheets().add(Resources.getCSS("AutotyperWindow").url().toExternalForm());
+                private Task<Boolean> makeTask() {
+                    Task<Boolean> task = new FXAutoTypingTask(keys, fileProperty, waitTimeProperty, inputDelayProperty, this::prestart);
+                    task.setOnSucceeded(this::onSuccess);
+                    task.setOnFailed(this::onError);
 
-			primaryStage.addEventHandler(MouseEvent.MOUSE_CLICKED, (event) -> {
-				if (!locField.contains(locField.sceneToLocal(event.getSceneX(), event.getSceneY()))) {
-					locField.hidePopup();
-				}
-			});
+                    return task;
+                }
 
-			this.doSave = true;
-			locField.installXYChangeListeners(primaryStage);
+            });
 
-			addIcons(primaryStage);
-			primaryStage.setTitle(Ref.APP_NAME + " " + Ref.VERSION);
-			primaryStage.setResizable(true);
-			primaryStage.setScene(scene);
-			primaryStage.show();
+            // Put it all together
 
-		} catch(Exception e) {
-			Alert alert = FXGuiUtils.buildException(e);
-			alert.showAndWait();
-			Console.exception(e);
-		}
-	}
+            // I have to admit all those constant numbers just look reallllly annoying.
+            grid.add(wBox, 0, 0, 1, 1);
+            grid.add(iBox, 0, 1, 1, 1);
+            grid.add(cBox, 0, 2, 1, 1);
+            grid.add(locBox, 0, 3, 1, 1);
+            grid.setAlignment(Pos.CENTER);
 
-	@Override
-	public void stop() {
-		if (this.doSave) {
-			savePrefs(this.waitTimeProperty.get(), this.inputDelayProperty.get(), this.curRank, this.locations);
-		}
-		this.keys.destroy();
-	}
+            root.setTop(getMenuBar());
+            root.setBottom(buttonStack);
+            root.setCenter(gridStack);
+
+            final Scene scene;
+
+            if (OS.get() == OS.WINDOWS) {
+                scene = new Scene(root, 450, 250);
+            } else {
+                scene = new Scene(root, 600, 250);
+            }
+
+            scene.getStylesheets().add(Resources.getCSS("AutotyperWindow").url().toExternalForm());
+
+            primaryStage.addEventHandler(MouseEvent.MOUSE_CLICKED, (event) -> {
+                if (!locField.contains(locField.sceneToLocal(event.getSceneX(), event.getSceneY()))) {
+                    locField.hidePopup();
+                }
+            });
+
+            this.doSave = true;
+            locField.installXYChangeListeners(primaryStage);
+
+            addIcons(primaryStage);
+            primaryStage.setTitle(Ref.APP_NAME + " " + Ref.VERSION);
+            primaryStage.setResizable(true);
+            primaryStage.setScene(scene);
+            primaryStage.show();
+
+        } catch (Exception e) {
+            Alert alert = FXGuiUtils.buildException(e);
+            alert.showAndWait();
+            Console.exception(e);
+        }
+    }
+
+    @Override
+    public void stop() {
+        if (this.doSave) {
+            savePrefs(this.waitTimeProperty.get(), this.inputDelayProperty.get(), this.curRank, this.locations);
+        }
+        this.keys.destroy();
+    }
 
     // FXAutotyperWindow Specific Image Loading. We only expect 4
-	private void addIcons(Stage stage) {
-		final Image[] img = new Image[4];
+    private void addIcons(Stage stage) {
+        final Image[] img = new Image[4];
 
-		for (int i = 0, size = 32; (i < img.length) && (size <= 128); size += 16) {
-			final Resource res = Resources.getImage("icon" + size + ".png");
+        for (int i = 0, size = 32; (i < img.length) && (size <= 128); size += 16) {
+            final Resource res = Resources.getImage("icon" + size + ".png");
 
-			if ((res.url() != null) && (res.stream() != null)) {
-				Console.debug("Found icon" + size + ".png");
-				img[i++] = new Image(res.stream());
-			} else if ((((size % 32) == 0) || (size == 48)) && (size != 96)) {
-				Console.error("Could not find icon" + size + ".png!");
-			}
-		}
+            if ((res.url() != null) && (res.stream() != null)) {
+                Console.debug("Found icon" + size + ".png");
+                img[i++] = new Image(res.stream());
+            } else if ((((size % 32) == 0) || (size == 48)) && (size != 96)) {
+                Console.error("Could not find icon" + size + ".png!");
+            }
+        }
 
-		stage.getIcons().clear();
-		for (final Image i : img)
-			if (i != null) {
-				stage.getIcons().add(i);
-			}
-	}
+        stage.getIcons().clear();
+        for (final Image i : img)
+            if (i != null) {
+                stage.getIcons().add(i);
+            }
+    }
 
-	private HBox getMenuBar() {
-		final Image infoIcon = new Image(Resources.getImage("about_icon.png").stream(), 30, 30, false, true);
-		final Image copyIcon = new Image(Resources.getImage("copyright_icon.png").stream(), 30, 30, false, true);
+    private HBox getMenuBar() {
+        final Image infoIcon = new Image(Resources.getImage("about_icon.png").stream(), 30, 30, false, true);
+        final Image copyIcon = new Image(Resources.getImage("copyright_icon.png").stream(), 30, 30, false, true);
 
-		final HBox bar = new HBox(5);
-		bar.setId("menu-bar");
-		bar.setPadding(new Insets(5, 5, 8, 5));
+        final HBox bar = new HBox(5);
+        bar.setId("menu-bar");
+        bar.setPadding(new Insets(5, 5, 8, 5));
 
-		final Button infoBtn = new Button("", new ImageView(infoIcon));
-		final Button copyBtn = new Button("", new ImageView(copyIcon));
+        final Button infoBtn = new Button("", new ImageView(infoIcon));
+        final Button copyBtn = new Button("", new ImageView(copyIcon));
 
         final KeyCodeCombination infoAcc = new KeyCodeCombination(KeyCode.I, UP, DOWN, UP, UP, UP);
         final KeyCodeCombination copyAcc = new KeyCodeCombination(KeyCode.C, UP, DOWN, UP, UP, UP);
 
-		infoBtn.setId("glass-button");
-		copyBtn.setId("glass-button");
+        infoBtn.setId("glass-button");
+        copyBtn.setId("glass-button");
 
-		infoBtn.sceneProperty().addListener((obs, ov, nv) -> {
-			if (nv != null)
-				nv.getAccelerators().put(infoAcc, FXAutotyperWindow.this::showGithubPage);
+        infoBtn.sceneProperty().addListener((obs, ov, nv) -> {
+            if (nv != null)
+                nv.getAccelerators().put(infoAcc, FXAutotyperWindow.this::showGithubPage);
 
-			if (ov != null)
-				ov.getAccelerators().remove(infoAcc);
-		});
+            if (ov != null)
+                ov.getAccelerators().remove(infoAcc);
+        });
 
-		copyBtn.sceneProperty().addListener((obs, ov, nv) -> {
-			if (nv != null)
-				nv.getAccelerators().put(copyAcc, FXAutotyperWindow.this::showCopyrightInfo);
+        copyBtn.sceneProperty().addListener((obs, ov, nv) -> {
+            if (nv != null)
+                nv.getAccelerators().put(copyAcc, FXAutotyperWindow.this::showCopyrightInfo);
 
-			if (ov != null)
-				ov.getAccelerators().remove(copyAcc);
-		});
+            if (ov != null)
+                ov.getAccelerators().remove(copyAcc);
+        });
 
         infoBtn.setOnAction((e) -> getHostServices().showDocument(Strings.GITHUB_URL));
         copyBtn.setOnAction((e) -> Autotyper.printCopyrightStatement(true));
 
-		bar.getChildren().addAll(infoBtn, copyBtn);
+        bar.getChildren().addAll(infoBtn, copyBtn);
 
-		return bar;
-	}
+        return bar;
+    }
 
     private void showGithubPage() {
         getHostServices().showDocument(Strings.GITHUB_URL);
@@ -439,53 +441,53 @@ public class FXAutotyperWindow extends Application {
         Autotyper.printCopyrightStatement(true);
     }
 
-	private void savePrefs(int waitTime, int delay, int selected, EvictingQueue<String> locations) {
+    private void savePrefs(int waitTime, int delay, int selected, EvictingQueue<String> locations) {
         this.prefs.put(Strings.PREFS_GUI_VERSION, Ref.VERSION);
-		this.prefs.putInt(Strings.PREFS_GUI_WAIT, waitTime);
-		this.prefs.putInt(Strings.PREFS_GUI_INPUTDELAY, delay);
-		this.prefs.putInt(Strings.PREFS_GUI_SELECTED, selected);
-		this.prefs.putBoolean(Strings.PREFS_GUI_CONFIRM, this.doConfirm);
+        this.prefs.putInt(Strings.PREFS_GUI_WAIT, waitTime);
+        this.prefs.putInt(Strings.PREFS_GUI_INPUTDELAY, delay);
+        this.prefs.putInt(Strings.PREFS_GUI_SELECTED, selected);
+        this.prefs.putBoolean(Strings.PREFS_GUI_CONFIRM, this.doConfirm);
 
-		for (int i = 0; i < 50; i++) {
-			final String text = locations.peek() == null ? "null" : locations.poll();
-			this.prefs.put(Strings.PREFS_GUI_MEMORY + i, text);
-		}
-	}
+        for (int i = 0; i < 50; i++) {
+            final String text = locations.peek() == null ? "null" : locations.poll();
+            this.prefs.put(Strings.PREFS_GUI_MEMORY + i, text);
+        }
+    }
 
-	private void loadPrefs() {
+    private void loadPrefs() {
         String version = this.prefs.get(Strings.PREFS_GUI_VERSION, "0.0.0");
 
-        if(AppVersion.compareTo(version) != 0)
-            try{
+        if (AppVersion.compareTo(version) != 0)
+            try {
                 prefs.clear();
-            } catch(BackingStoreException e){
+            } catch (BackingStoreException e) {
                 Console.exception(e);
             }
 
         this.waitTimeProperty.set(this.prefs.getInt(Strings.PREFS_GUI_WAIT, 5000));
         this.inputDelayProperty.set(this.prefs.getInt(Strings.PREFS_GUI_INPUTDELAY, 40));
-		this.curRank = this.prefs.getInt(Strings.PREFS_GUI_SELECTED, 3);
-		this.doConfirm = this.prefs.getBoolean(Strings.PREFS_GUI_CONFIRM, true);
+        this.curRank = this.prefs.getInt(Strings.PREFS_GUI_SELECTED, 3);
+        this.doConfirm = this.prefs.getBoolean(Strings.PREFS_GUI_CONFIRM, true);
 
-		this.curRank = Math.max(1, Math.min(4, this.curRank));
+        this.curRank = Math.max(1, Math.min(4, this.curRank));
 
         saveToHistory("JCR8YTww", LocationHandler.PASTEBIN.tag());
         saveToHistory("6gyLvm4K", LocationHandler.PASTEBIN.tag());
         saveToHistory("nAinUn1h", LocationHandler.PASTEBIN.tag());
 
-		for (int i = 0; i < 50; i++) {
-			final String s = this.prefs.get(Strings.PREFS_GUI_MEMORY + i, "null");
+        for (int i = 0; i < 50; i++) {
+            final String s = this.prefs.get(Strings.PREFS_GUI_MEMORY + i, "null");
 
-			if (!s.equals("null") && s.indexOf(':') != -1) {
+            if (!s.equals("null") && s.indexOf(':') != -1) {
                 int index = s.indexOf(':') + 1;
                 String tag = s.substring(0, index);
                 String main = s.substring(index);
-				saveToHistory(main, tag);
-			}
-		}
-	}
+                saveToHistory(main, tag);
+            }
+        }
+    }
 
-	private void showError(String message) {
+    private void showError(String message) {
         Alert alert = new Alert(Alert.AlertType.ERROR, message);
         alert.setHeaderText("AutoTyper Error");
         alert.setTitle("Error!");
@@ -493,9 +495,9 @@ public class FXAutotyperWindow extends Application {
         alert.getDialogPane().setPrefSize(600, 400);
 
         alert.show();
-	}
+    }
 
-	private void showMessage(String message) {
+    private void showMessage(String message) {
         Alert alert = new Alert(Alert.AlertType.INFORMATION, message);
         alert.setHeaderText("AutoTyper Message");
         alert.setTitle("Message");
@@ -503,15 +505,16 @@ public class FXAutotyperWindow extends Application {
         alert.getDialogPane().setPrefSize(600, 400);
 
         alert.show();
-	}
+    }
 
     private static final HashFunction hf = Hashing.murmur3_32();
     private Set<HashCode> locationHashes = Sets.newHashSet();
-	private boolean saveToHistory(String loc, String tag) {
+
+    private boolean saveToHistory(String loc, String tag) {
         HashCode hash = hf.newHasher().putString(loc, Charsets.UTF_8).hash();
         Console.debug("Location '" + loc + "' hashed to '" + hash.toString() + "', New? = " + !locationHashes.contains(hash));
 
-		if (!this.locationHashes.contains(hash)) {
+        if (!this.locationHashes.contains(hash)) {
             this.locations.add(tag + loc);
             this.locationHashes.add(hash);
             return true;
@@ -520,49 +523,49 @@ public class FXAutotyperWindow extends Application {
         return false;
     }
 
-	private void obtainKeyboard() {
-		this.keys = Keyboard.retrieveKeyboard(KeyboardMethodology.TYPING);
-	}
+    private void obtainKeyboard() {
+        this.keys = Keyboard.retrieveKeyboard(KeyboardMethodology.TYPING);
+    }
 
-	private boolean isValid(String input) {
-		try {
-			return Integer.valueOf(input) != null;
-		} catch (final NumberFormatException e) {
-			// Ignored, just a check
-		}
+    private boolean isValid(String input) {
+        try {
+            return Integer.valueOf(input) != null;
+        } catch (final NumberFormatException e) {
+            // Ignored, just a check
+        }
 
-		return false;
-	}
+        return false;
+    }
 
-	private boolean approve(File code) throws IOException {
-		if (FXConfirmDialog.isAvailable())
-			return FXConfirmDialog.confirm(this.primaryStage, code);
-		else
-			return new ConfirmFileDialog(null, code).isApproved();
-	}
+    private boolean approve(Path code) throws IOException {
+        if (FXConfirmDialog.isAvailable())
+            return FXConfirmDialog.confirm(this.primaryStage, code);
+        else
+            return new ConfirmFileDialog(null, code.toFile()).isApproved();
+    }
 
-	public static void launch() {
-		Application.launch(FXAutotyperWindow.class);
-	}
+    public static void launch() {
+        Application.launch(FXAutotyperWindow.class);
+    }
 
-	private static final GuiAccessor FX_ACCESSOR = new GuiAccessor() {
-		@Override
-		public void doShow() {
-			if (FXAutotyperWindow.INSTANCE == null) {
-				FXAutotyperWindow.launch();
-			} else {
-				FXAutotyperWindow.INSTANCE.primaryStage.show();
-			}
-		}
+    private static final GuiAccessor FX_ACCESSOR = new GuiAccessor() {
+        @Override
+        public void doShow() {
+            if (FXAutotyperWindow.INSTANCE == null) {
+                FXAutotyperWindow.launch();
+            } else {
+                FXAutotyperWindow.INSTANCE.primaryStage.show();
+            }
+        }
 
-		@Override
-		public void doHide() {
-			FXAutotyperWindow.INSTANCE.primaryStage.hide();
-		}
-	};
+        @Override
+        public void doHide() {
+            FXAutotyperWindow.INSTANCE.primaryStage.hide();
+        }
+    };
 
-	public static GuiAccessor getAccessor() {
-		return FX_ACCESSOR;
-	}
+    public static GuiAccessor getAccessor() {
+        return FX_ACCESSOR;
+    }
 
 }

@@ -3,10 +3,8 @@ package com.mattc.autotyper.util;
 import com.google.common.io.Files;
 import com.mattc.autotyper.gui.SingleStringProcessor;
 
-import java.io.BufferedInputStream;
 import java.io.Closeable;
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.net.URL;
@@ -40,56 +38,6 @@ public final class IOUtils {
 
     public static String fileToString(File file) throws IOException {
         return fileToString(file, Charset.defaultCharset());
-    }
-
-    public static File download(URL url, String filename) throws IOException {
-
-        final File temp = File.createTempFile(filename, "cctemp");
-
-        BufferedInputStream bis = null;
-        FileOutputStream fos = null;
-
-        temp.createNewFile();	// Create Temporary File
-        temp.deleteOnExit();	// Delete Temporary File Once Finished
-
-        try {
-            Console.info("Downloading " + filename + " of " + url + "...");
-            bis = new BufferedInputStream(url.openStream());
-            fos = new FileOutputStream(temp);
-            final OS.MemoryUnit unit = OS.MemoryUnit.KILOBYTES;
-            final byte[] buf = new byte[8192];
-            long curTime, tarTime = System.currentTimeMillis() + (5_000);
-            long total = 0;
-            int accumulator = 0;
-
-            for (int c = bis.read(buf); c != -1; c = bis.read(buf)) {
-                fos.write(buf, 0, c);
-                accumulator += c;
-
-                if ((curTime = System.currentTimeMillis()) >= tarTime) {
-                    // Inform of Bytes read every DOWNLOAD_LOG_DELAY seconds
-                    // Inform of B/s every DOWNLOAD_LOG_DELAY seconds
-                    total += accumulator;
-                    final long totalAdj = OS.MemoryUnit.MEGABYTES.convert(total, OS.MemoryUnit.BYTES);
-                    final long accAdj = unit.convert(accumulator, OS.MemoryUnit.BYTES);
-                    final long rateAdj = unit.convert(Math.round((accumulator / (5.0d + (((double) curTime - (double) tarTime) / 1000.0d)))), OS.MemoryUnit.BYTES);
-                    final String msg = String.format("%,d KB (at %,d KB/s) read for %s, Total: %,d MB...", accAdj, rateAdj, filename, totalAdj);
-                    Console.info(msg);
-                    accumulator = 0;
-                    tarTime = System.currentTimeMillis() + 5000;
-                }
-            }
-
-            Console.info("Finished!");
-        } catch (final IOException e) {
-            Console.exception(e);
-            throw e;
-        } finally {
-            IOUtils.close(bis);
-            IOUtils.close(fos);
-        }
-
-        return temp;
     }
 
     /**
@@ -136,7 +84,7 @@ public final class IOUtils {
         try {
             Thread.sleep(millis);
         } catch (InterruptedException e) {
-            // Ignmore
+            // Ignore
         }
     }
 

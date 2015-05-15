@@ -123,7 +123,6 @@ public final class Console {
 
     /**
      * Indicates a Debug Message meant for the Programmer alone.
-     *
      */
     public static void debug(Object msg) {
         log(msg, Level.DEBUG);
@@ -139,7 +138,6 @@ public final class Console {
     /**
      * Write a Stack Trace to the log with the given additional message. Writes 16
      * Stack Trace Elements at most.
-     *
      */
     public static void trace(Object msg) {
         int lines = 0;
@@ -207,7 +205,6 @@ public final class Console {
      * Indicates that although the program can continue as expected, <br />
      * the program may act unexpectedly due to receiving a valid, but <br />
      * unexpected result or value.
-     *
      */
     public static void warn(Object msg) {
         log(msg, Level.WARN);
@@ -216,7 +213,6 @@ public final class Console {
     /**
      * Indicates an Error that is recoverable but should be noted to the <br />
      * user or programmer since this is likely a programmer error. <br />
-     *
      */
     public static void error(Object msg) {
         log(msg, Level.ERROR);
@@ -225,7 +221,6 @@ public final class Console {
     /**
      * Indicates a Fatal Error that has caused the program to terminate <br />
      * since the error is unrecoverable.
-     *
      */
     public static void fatal(Object msg) {
         log(msg, Level.FATAL);
@@ -233,7 +228,6 @@ public final class Console {
 
     /**
      * Write an Exception to the Log with the full Stack Trace.
-     *
      */
     public static void exception(Throwable e) {
         exception(e, null);

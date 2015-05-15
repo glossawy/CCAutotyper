@@ -9,10 +9,10 @@ import java.lang.annotation.Target;
 @Target(ElementType.TYPE)
 public @interface FXParseable {
 
-	public static final String NO_VAL = "%%NO_VAL_SELECTED%%";
+    public static final String NO_VAL = "%%NO_VAL_SELECTED%%";
 
-	String value() default NO_VAL;
+    String value() default NO_VAL;
 
-	boolean hidden() default true;
+    boolean hidden() default true;
 
 }

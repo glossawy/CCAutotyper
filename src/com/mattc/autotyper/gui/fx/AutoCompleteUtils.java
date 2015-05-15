@@ -1,10 +1,10 @@
 package com.mattc.autotyper.gui.fx;
 
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
 import com.mattc.autotyper.util.JPredicates;
 
 import java.util.stream.Collectors;
-import javafx.collections.FXCollections;
-import javafx.collections.ObservableList;
 
 /**
  * Needs Documentation
@@ -14,10 +14,12 @@ import javafx.collections.ObservableList;
  */
 public final class AutoCompleteUtils {
 
-    private AutoCompleteUtils() {throw new AssertionError();}
+    private AutoCompleteUtils() {
+        throw new AssertionError();
+    }
 
     public static ObservableList<String> selectCompletionCandidates(final ObservableList<String> data, String base, boolean sort) {
-        if(base.isEmpty())
+        if (base.isEmpty())
             return FXCollections.observableArrayList(data);
 
         ObservableList<StringWrapper> wrappers = FXCollections.observableArrayList();

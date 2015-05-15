@@ -41,7 +41,7 @@ class TypingMethodology extends BaseMethodology {
                 IOUtils.sleep(200);
             }
 
-            while(!this.isScheduleEmpty())
+            while (!this.isScheduleEmpty())
                 keys.doType(this.nextScheduleKey());
 
             if (this.isInactive()) {
@@ -57,68 +57,68 @@ class TypingMethodology extends BaseMethodology {
 
     @Override
     public void typeFile(File file) throws IOException {
-		final List<String> lines = Files.readAllLines(Paths.get(file.toURI()), StandardCharsets.UTF_8);
+        final List<String> lines = Files.readAllLines(Paths.get(file.toURI()), StandardCharsets.UTF_8);
 
         this.start();
 
-		final OS.MemoryUnit mem = OS.MemoryUnit.KILOBYTES;
-		final long size = mem.convert(file.length(), OS.MemoryUnit.BYTES);
-		Console.info(String.format("Writing File of Size %,d KB consisting of %,d lines", size, lines.size()));
+        final OS.MemoryUnit mem = OS.MemoryUnit.KILOBYTES;
+        final long size = mem.convert(file.length(), OS.MemoryUnit.BYTES);
+        Console.info(String.format("Writing File of Size %,d KB consisting of %,d lines", size, lines.size()));
 
-		boolean block = false;
-		outer:
-			for (final String l : lines) {
-				// Ignore Empty Lines and Comments
-				if (l.length() == 0) {
-					continue;
-				} else if (l.startsWith("--[[")) {
-					block = true;
-					continue;
-				} else if (block && (l.endsWith("]]") || l.endsWith("]]--"))) {
-					block = false;
-					continue;
-				} else if (l.startsWith("--")) {
-					continue;
-				}
+        boolean block = false;
+        outer:
+        for (final String l : lines) {
+            // Ignore Empty Lines and Comments
+            if (l.length() == 0) {
+                continue;
+            } else if (l.startsWith("--[[")) {
+                block = true;
+                continue;
+            } else if (block && (l.endsWith("]]") || l.endsWith("]]--"))) {
+                block = false;
+                continue;
+            } else if (l.startsWith("--")) {
+                continue;
+            }
 
-				// Basically a copy of type(String) but this gives us more control
-				// to pause and stop on a per character basis, not a per line basis.
-				final char[] characters = l.trim().toCharArray();
-				int commentChars = 0;
-                for (final char c : characters) {
-                    // Cancel typing once we hit a comment
-                    if(c == '-')
-                        commentChars ++;
-                    else
-                        commentChars = 0;
+            // Basically a copy of type(String) but this gives us more control
+            // to pause and stop on a per character basis, not a per line basis.
+            final char[] characters = l.trim().toCharArray();
+            int commentChars = 0;
+            for (final char c : characters) {
+                // Cancel typing once we hit a comment
+                if (c == '-')
+                    commentChars++;
+                else
+                    commentChars = 0;
 
-                    if(commentChars >= 2)
-                        break;
+                if (commentChars >= 2)
+                    break;
 
-                    // Pause Loop
-					while (this.isPaused() || this.isAltDown()) {
-						// We have to yield CPU time, 200 ms just sounds nice. (could be 10 ms or less)
-                        IOUtils.sleep(200);
-					}
+                // Pause Loop
+                while (this.isPaused() || this.isAltDown()) {
+                    // We have to yield CPU time, 200 ms just sounds nice. (could be 10 ms or less)
+                    IOUtils.sleep(500);
+                }
 
-                    // Handle Scheduled Key Events of the NativeHooks Dispatch Thread
-                    while(!this.isScheduleEmpty())
-                        keys.doType(this.nextScheduleKey());
+                // Handle Scheduled Key Events of the NativeHooks Dispatch Thread
+                while (!this.isScheduleEmpty())
+                    keys.doType(this.nextScheduleKey());
 
-                    // Kill Switch
-                    if (this.isInactive()) {
-						this.clearSchedule();
-                        break outer;
-					}
+                // Kill Switch
+                if (this.isInactive()) {
+                    this.clearSchedule();
+                    break outer;
+                }
 
-					type(c);
-				}
+                type(c);
+            }
 
-				keys.doType(KeyEvent.VK_ENTER);
-			}
+            keys.doType(KeyEvent.VK_ENTER);
+        }
 
-		Console.debug("FINISHED");
-		this.end();
+        Console.debug("FINISHED");
+        this.end();
     }
 
     @Override

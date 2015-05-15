@@ -5,14 +5,13 @@ package com.mattc.autotyper.gui;
  * being unrelated to each other in any way. This allows a single common interface in
  * the main class instead of trying to handle two completely different GUIs of two
  * completely different API's.
- * 
- * @author Matthew
  *
+ * @author Matthew
  */
 public interface GuiAccessor {
 
-	void doShow();
+    void doShow();
 
-	void doHide();
+    void doHide();
 
 }

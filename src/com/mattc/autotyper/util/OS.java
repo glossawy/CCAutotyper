@@ -1,10 +1,10 @@
 package com.mattc.autotyper.util;
 
 import com.google.common.base.Preconditions;
+import com.google.common.collect.BiMap;
+import com.google.common.collect.HashBiMap;
 import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Maps;
 
-import java.util.Map;
 import java.util.Set;
 
 /**
@@ -316,12 +316,12 @@ public final class OS {
         };
 
         // SI Unit Memory Size Constants (Base 10)
-        static final long C_KB =        1_000; // Bytes per Kilobyte
+        static final long C_KB = 1_000; // Bytes per Kilobyte
         static final long C_MB = C_KB * 1_000; // Bytes per Megabyte
         static final long C_GB = C_MB * 1_000; // Bytes per Gigabyte
 
         // Non-SI Unit Memory Size Constants (Base 2)
-        static final long C_KiB =         1_024; // Bytes per Kibibyte
+        static final long C_KiB = 1_024; // Bytes per Kibibyte
         static final long C_MiB = C_KiB * 1_024; // Bytes per Mebibyte
         static final long C_GiB = C_MiB * 1_024; // Bytes per Gibibyte
 
@@ -333,56 +333,47 @@ public final class OS {
 
         /**
          * Convert to Bytes
-         *
          */
         public abstract long toBytes(long amt);
 
         /**
          * Convert to Kilobytes (1000 Bytes or 10^3 Bytes)
-         *
          */
         public abstract long toKilobytes(long amt);
 
         /**
          * Convert to Kibibytes (1024 Bytes or 2^10 Bytes)
-         *
          */
         public abstract long toKibibytes(long amt);
 
         /**
          * Convert to Megabytes (1000 Kilobytes or 10^6 Bytes)
-         *
          */
         public abstract long toMegabytes(long amt);
 
         /**
          * Convert to Mebibytes (1024 Kibibytes or 2^20 Bytes)
-         *
          */
         public abstract long toMebibytes(long amt);
 
         /**
          * Convert to Gigabytes (1000 Megabytes or 10^9 Bytes)
-         *
          */
         public abstract long toGigabytes(long amt);
 
         /**
          * Convert to Gibibytes (1024 Mebibytes or 2^30 Bytes)
-         *
          */
         public abstract long toGibibytes(long amt);
 
         /**
          * Convert source unit to this unit.
-         *
          */
         public abstract long convert(long amt, MemoryUnit source);
 
         /**
          * The appropriate tag for the Unit of Memory Storage, e.g., MB, MiB, GiB,
          * GB, etc.
-         *
          */
         public String getTag() {
             return this.tag;
@@ -394,6 +385,10 @@ public final class OS {
         }
     }
 
+    /**
+     * Enumeration of simple computer architectures, often referred to as the "bitness" of a system, i.e.
+     * x86 (32-bit) and x64 (64-bit) architectures.
+     */
     public enum Bit {
         BIT_32("x86", "32-bit", 32), BIT_64("x64", "64-bit", 64);
 
@@ -407,14 +402,29 @@ public final class OS {
             this.num = num;
         }
 
+        /**
+         * Retrieve the "tag" for this bitness. e.g. 'x86' for 32-bit systems
+         *
+         * @return The associated bitness tag
+         */
         public String getTag() {
             return this.tag;
         }
 
+        /**
+         * Returns the numerical bitness. e.g. '32' for 32-bit systems
+         *
+         * @return Numerical Bitness Value
+         */
         public int getInt() {
             return this.num;
         }
 
+        /**
+         * Get the 'mnemonic' associated. e.g. '32-bit' for 32-bit systems.
+         *
+         * @return Bitness Mnemonic
+         */
         public String getMnemonic() {
             return this.mnemonic;
         }
@@ -425,58 +435,121 @@ public final class OS {
         }
     }
 
-    public static final OS WINDOWS = new OS(".exe", "win", "windows");
-    public static final OS UNIX = new OS("", "lin", "linux", "nux");
-    public static final OS UNSUPPORTED = new OS("");
+    /**
+     * Microsoft Windows with 'exe' binary executables
+     */
+    public static final OS WINDOWS = new OS(false, ".exe", "win", "windows");
 
-    private static final Map<OS, String> nameLookup = Maps.newHashMap();
+    /**
+     * Non-specific Unix System with no definitive executable extension
+     */
+    public static final OS UNIX = new OS(true, "", "lin", "linux", "nux");
 
+    /**
+     * Apple Mac OSX with 'app' binary executables (packages)
+     */
+    public static final OS MAC_OSX = new OS(true, ".app", "mac", "osx", "apple");
+
+    /**
+     * Sun Microsystems' Solaris OS with no definitive executable extension
+     */
+    public static final OS SOLARIS = new OS(true, "", "sunos", "solaris");
+
+    /**
+     * A Placeholder for an Unsupported or Undefined OS, thus having an undefined executable extension
+     */
+    public static final OS UNSUPPORTED = new OS(false, "");
+
+    /**
+     * Name to OS and OS to Name Lookup Table [to mimic an enum]
+     */
+    private static final BiMap<OS, String> nameLookup = HashBiMap.create(5);
+
+    /**
+     * Values Set, for mimicking {@link Enum Enum's} values() method
+     */
+    private static final Set<OS> values = ImmutableSet.of(WINDOWS, MAC_OSX, SOLARIS, UNIX, UNSUPPORTED);
     private static final Runtime rt = Runtime.getRuntime();
-    private static final Set<OS> values = ImmutableSet.of(WINDOWS, UNIX, UNSUPPORTED);
 
     public final String suffix;
     public final String[] aliases;
 
+    private final boolean unix;
+
     static {
         nameLookup.put(WINDOWS, "Windows");
         nameLookup.put(UNIX, "Unix");
+        nameLookup.put(MAC_OSX, "Mac OSX");
+        nameLookup.put(SOLARIS, "Solaris");
         nameLookup.put(UNSUPPORTED, "Unsupported");
     }
 
-    private OS(String executable, String... aliases) {
+    private OS(boolean unixBased, String executable, String... aliases) {
         this.suffix = executable;
         this.aliases = aliases;
+        this.unix = unixBased;
     }
 
+    /**
+     * Determines if the given alias is a valid alias for any supported OS'. If
+     * the alias is not a registered alias or name of an OS then false is returned.
+     *
+     * @param alias Name Alias
+     * @return True if valid OS, otherwise false.
+     */
     public boolean isValidAlias(String alias) {
         Preconditions.checkNotNull(alias);
         for (final String s : this.aliases)
             if (s.equalsIgnoreCase(alias)) return true;
 
-        return false;
+        return nameLookup.containsValue(alias);
     }
 
+    /**
+     * Determines if this system is a Unix based system that may need unix-specific operations done such
+     * as assigning POSIX File Permissions to files for access.
+     *
+     * @return True if unix based, false otherwise.
+     */
+    public boolean isUnixBased() {
+        return unix;
+    }
+
+    /**
+     * Determines the desired OS from the given OS. If the alias is not a registered alias or name
+     * of a supported OS then OS.UNSUPPORTED is returned.
+     *
+     * @param alias Name Alias
+     * @return The Desired OS if supported, else OS.UNSUPPORTED
+     */
     public static OS forAlias(String alias) {
         Preconditions.checkNotNull(alias);
         for (final OS os : OS.values())
             if (os.isValidAlias(alias)) return os;
 
-        return null;
+        return OS.get(alias);
     }
 
     /**
-     * Get this System OS
-     *
+     * Get this System OS or OS.UNSUPPORTED
      */
     public static OS get() {
         final String name = System.getProperty("os.name").toLowerCase();
 
         if (name.contains("win"))
             return WINDOWS;
-        else if ((name.contains("nix")) || (name.contains("nux")) || (name.contains("nax")))
+        else if (name.contains("mac"))
+            return MAC_OSX;
+        else if (name.contains("sunos"))
+            return SOLARIS;
+        else if ((name.contains("nix")) || (name.contains("nux")) || (name.contains("nax")) || name.contains("aix"))
             return UNIX;
         else
             return UNSUPPORTED;
+    }
+
+    public static OS get(String name) {
+        return nameLookup.inverse().getOrDefault(name, OS.UNIX);
     }
 
     /**
@@ -510,7 +583,7 @@ public final class OS {
         final String arch = System.getenv("PROCESSOR_ARCHITECTURE");
         final String wow64 = System.getenv("PROCESSOR_ARCHITEW6432");
 
-        if(arch == null)
+        if (arch == null)
             return getArchJVM();
 
         if ((arch.indexOf("64") > 0) || ((wow64 != null) && (wow64.indexOf("64") > 0)))

@@ -60,9 +60,9 @@ public final class AppVersion {
         int minor = Integer.parseInt(parts[1]);
         int revision = Integer.parseInt(parts[2]);
 
-        if(isLower(major, minor, revision))
+        if (isLower(major, minor, revision))
             return -1;
-        else if(isHigher(major, minor, revision))
+        else if (isHigher(major, minor, revision))
             return 1;
         else
             return 0;
