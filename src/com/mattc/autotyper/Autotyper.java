@@ -12,6 +12,7 @@ import com.mattc.autotyper.gui.AutotyperWindow;
 import com.mattc.autotyper.gui.GuiAccessor;
 import com.mattc.autotyper.gui.fx.FXAutotyperWindow;
 import com.mattc.autotyper.gui.fx.FXGuiUtils;
+import com.mattc.autotyper.gui.fx.WebLink;
 import com.mattc.autotyper.robot.Keyboard;
 import com.mattc.autotyper.robot.KeyboardMethodology;
 import com.mattc.autotyper.util.Console;
@@ -269,7 +270,10 @@ public class Autotyper {
 
             if (gui) {
                 if (FXGuiUtils.canUseJavaFX() && Platform.isFxApplicationThread()) {
-                    Alert alert = FXGuiUtils.buildLongAlert("This Software is Licensed with No Warranty", bos.toString());
+                    WebLink repoLink = new WebLink("CCAutotyper @ GitHub", Strings.GITHUB_URL, FXAutotyperWindow.getAccessor());
+                    WebLink devLink = new WebLink("Developer Website", Strings.DEVSITE_URL, FXAutotyperWindow.getAccessor());
+
+                    Alert alert = FXGuiUtils.buildLongAlert("This Software is Licensed with No Warranty", bos.toString(), repoLink, devLink);
                     alert.setTitle("Copyright & Warranty");
 
                     alert.show();

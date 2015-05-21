@@ -1,5 +1,7 @@
 package com.mattc.autotyper;
 
+import javafx.scene.image.Image;
+import javafx.stage.Stage;
 import com.mattc.autotyper.util.Console;
 
 import java.io.File;
@@ -21,6 +23,7 @@ public class Strings {
      * GitHub URL to open when the 'info' button is pressed
      */
     public static final String GITHUB_URL = "https://github.com/Matt529/CCAutotyper/blob/master/README.md";
+    public static final String DEVSITE_URL = "https://www.matthewcrocco.us";
 
     public static final String FLAG_GUI = "gui";
     public static final String FLAG_FILE = "file";
@@ -67,6 +70,25 @@ public class Strings {
     public static final class Resources {
 
         public static final String LICENSE = "com/mattc/autotyper/license";
+        private static final Image[] img = new Image[4];
+
+        public static void setAppIcons(Stage stage) {
+            if (img[0] == null) {
+                for (int i = 0, size = 32; (i < img.length) && (size <= 128); size += 16) {
+                    final Resource res = Resources.getImage("icon" + size + ".png");
+
+                    if ((res.url() != null) && (res.stream() != null)) {
+                        Console.debug("Found icon" + size + ".png");
+                        img[i++] = new Image(res.stream());
+                    } else if ((((size % 32) == 0) || (size == 48)) && (size != 96)) {
+                        Console.error("Could not find icon" + size + ".png!");
+                    }
+                }
+
+            }
+
+            stage.getIcons().addAll(img);
+        }
 
         public static Resource getLicense() {
             return new Resource() {

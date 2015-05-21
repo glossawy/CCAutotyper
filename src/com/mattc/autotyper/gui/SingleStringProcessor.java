@@ -1,12 +1,13 @@
 package com.mattc.autotyper.gui;
 
+import com.google.common.base.StandardSystemProperty;
 import com.google.common.io.LineProcessor;
 
 import java.io.IOException;
 
 public class SingleStringProcessor implements LineProcessor<String> {
 
-    private static final String SEP = System.getProperty("line.separator");
+    private static final String SEP = StandardSystemProperty.LINE_SEPARATOR.value();
     private final StringBuilder sb = new StringBuilder();
 
     @Override

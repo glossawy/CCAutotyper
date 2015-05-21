@@ -47,7 +47,6 @@ import com.mattc.autotyper.Autotyper;
 import com.mattc.autotyper.Ref;
 import com.mattc.autotyper.Strings;
 import com.mattc.autotyper.Strings.Resources;
-import com.mattc.autotyper.Strings.Resources.Resource;
 import com.mattc.autotyper.gui.ConfirmFileDialog;
 import com.mattc.autotyper.gui.GuiAccessor;
 import com.mattc.autotyper.gui.LocationHandler;
@@ -62,8 +61,6 @@ import java.nio.file.Path;
 import java.util.Set;
 import java.util.prefs.BackingStoreException;
 import java.util.prefs.Preferences;
-
-// TODO Split into more manageable objects
 
 public class FXAutotyperWindow extends Application {
 
@@ -99,6 +96,7 @@ public class FXAutotyperWindow extends Application {
             // Load Preferences and obtain proper Keyboard
             loadPrefs();
             obtainKeyboard();
+            addIcons(primaryStage);
 
             // Initialize Parent Nodes
             final BorderPane root = new BorderPane();
@@ -349,7 +347,6 @@ public class FXAutotyperWindow extends Application {
             this.doSave = true;
             locField.installXYChangeListeners(primaryStage);
 
-            addIcons(primaryStage);
             primaryStage.setTitle(Ref.APP_NAME + " " + Ref.VERSION);
             primaryStage.setResizable(true);
             primaryStage.setScene(scene);
@@ -372,24 +369,7 @@ public class FXAutotyperWindow extends Application {
 
     // FXAutotyperWindow Specific Image Loading. We only expect 4
     private void addIcons(Stage stage) {
-        final Image[] img = new Image[4];
-
-        for (int i = 0, size = 32; (i < img.length) && (size <= 128); size += 16) {
-            final Resource res = Resources.getImage("icon" + size + ".png");
-
-            if ((res.url() != null) && (res.stream() != null)) {
-                Console.debug("Found icon" + size + ".png");
-                img[i++] = new Image(res.stream());
-            } else if ((((size % 32) == 0) || (size == 48)) && (size != 96)) {
-                Console.error("Could not find icon" + size + ".png!");
-            }
-        }
-
-        stage.getIcons().clear();
-        for (final Image i : img)
-            if (i != null) {
-                stage.getIcons().add(i);
-            }
+        Resources.setAppIcons(stage);
     }
 
     private HBox getMenuBar() {
@@ -442,20 +422,35 @@ public class FXAutotyperWindow extends Application {
     }
 
     private void savePrefs(int waitTime, int delay, int selected, EvictingQueue<String> locations) {
+        Console.empty();
+        Console.info("SAVING AS VERSION: " + Ref.VERSION);
         this.prefs.put(Strings.PREFS_GUI_VERSION, Ref.VERSION);
+
         this.prefs.putInt(Strings.PREFS_GUI_WAIT, waitTime);
         this.prefs.putInt(Strings.PREFS_GUI_INPUTDELAY, delay);
         this.prefs.putInt(Strings.PREFS_GUI_SELECTED, selected);
         this.prefs.putBoolean(Strings.PREFS_GUI_CONFIRM, this.doConfirm);
 
+        Console.info("\tWAIT TIME: " + waitTime);
+        Console.info("\tIN. DELAY: " + delay);
+        Console.info("\tSEL. BTN.: " + selected);
+        Console.info("\tCON. DLG.: " + this.doConfirm);
+        Console.empty();
+
         for (int i = 0; i < 50; i++) {
-            final String text = locations.peek() == null ? "null" : locations.poll();
-            this.prefs.put(Strings.PREFS_GUI_MEMORY + i, text);
+            final String text = locations.poll();
+            this.prefs.put(Strings.PREFS_GUI_MEMORY + i, String.valueOf(text));
+            if (text != null)
+                Console.info("\tTO HISTORY: " + text);
         }
+
+        Console.empty();
     }
 
     private void loadPrefs() {
         String version = this.prefs.get(Strings.PREFS_GUI_VERSION, "0.0.0");
+        Console.empty();
+        Console.info("LOADING VERSION: " + version);
 
         if (AppVersion.compareTo(version) != 0)
             try {
@@ -469,6 +464,12 @@ public class FXAutotyperWindow extends Application {
         this.curRank = this.prefs.getInt(Strings.PREFS_GUI_SELECTED, 3);
         this.doConfirm = this.prefs.getBoolean(Strings.PREFS_GUI_CONFIRM, true);
 
+        Console.info("\tWAIT TIME: " + waitTimeProperty.get());
+        Console.info("\tIN. DELAY: " + inputDelayProperty.get());
+        Console.info("\tSEL. BTN.: " + curRank);
+        Console.info("\tCON. DLG.: " + doConfirm);
+        Console.empty();
+
         this.curRank = Math.max(1, Math.min(4, this.curRank));
 
         saveToHistory("JCR8YTww", LocationHandler.PASTEBIN.tag());
@@ -478,7 +479,7 @@ public class FXAutotyperWindow extends Application {
         for (int i = 0; i < 50; i++) {
             final String s = this.prefs.get(Strings.PREFS_GUI_MEMORY + i, "null");
 
-            if (!s.equals("null") && s.indexOf(':') != -1) {
+            if (s != null && !s.equals("null") && s.indexOf(':') != -1) {
                 int index = s.indexOf(':') + 1;
                 String tag = s.substring(0, index);
                 String main = s.substring(index);
@@ -561,6 +562,11 @@ public class FXAutotyperWindow extends Application {
         @Override
         public void doHide() {
             FXAutotyperWindow.INSTANCE.primaryStage.hide();
+        }
+
+        @Override
+        public void openSite(String url) {
+            FXAutotyperWindow.INSTANCE.getHostServices().showDocument(url);
         }
     };
 

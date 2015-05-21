@@ -13,6 +13,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -64,7 +65,7 @@ public class Downloader {
      */
     public static Path getFile(URL url) {
         try {
-            return download(url, url.getFile().contains("=") ? url.getFile().split("=")[1] : "cc-auto-file");
+            return download(url, url.getFile().contains("=") ? url.getFile().split("=")[1] : generateFilename(url.toString()));
         } catch (final IOException e) {
             Console.exception(e);
         }
@@ -248,5 +249,9 @@ public class Downloader {
         } catch (IOException e) {
             throw new IORuntimeException(e);
         }
+    }
+
+    private static String generateFilename(String identifier) {
+        return Integer.toString(Hashing.crc32c().newHasher().putString(identifier, StandardCharsets.UTF_8).hash().asInt(), Character.MAX_RADIX);
     }
 }

@@ -618,4 +618,13 @@ public class AutotyperWindow extends JFrame implements GuiAccessor {
         setVisible(false);
     }
 
+    @Override
+    public void openSite(String url) {
+        try {
+            Desktop.getDesktop().browse(new URL(url).toURI());
+        } catch (URISyntaxException | IOException e) {
+            Console.exception(e);
+        }
+    }
+
 }

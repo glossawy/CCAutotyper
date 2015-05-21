@@ -14,4 +14,5 @@ public interface GuiAccessor {
 
     void doHide();
 
+    void openSite(String url);
 }

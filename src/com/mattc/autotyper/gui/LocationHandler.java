@@ -108,7 +108,7 @@ public enum LocationHandler {
 
     private final String tag;
 
-    private LocationHandler(String tag) {
+    LocationHandler(String tag) {
         this.tag = tag;
     }
 

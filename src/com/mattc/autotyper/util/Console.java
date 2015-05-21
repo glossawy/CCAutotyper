@@ -111,6 +111,10 @@ public final class Console {
         }
     }
 
+    public static void empty() {
+        info("");
+    }
+
     /**
      * Indicates a certain point has been reached successfully and may <br />
      * print state information. <br />

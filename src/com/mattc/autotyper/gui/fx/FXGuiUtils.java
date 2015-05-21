@@ -88,7 +88,7 @@ public class FXGuiUtils {
         stage.setAlwaysOnTop(true);
     }
 
-    public static Alert buildLongAlert(String context, String longMessage) {
+    public static Alert buildLongAlert(String context, String longMessage, Node... additional) {
         Alert alert = new Alert(Alert.AlertType.INFORMATION);
         alert.setHeaderText(context);
 
@@ -107,6 +107,9 @@ public class FXGuiUtils {
         expanded.setMaxWidth(Double.MAX_VALUE);
         expanded.add(label, 0, 0);
         expanded.add(textArea, 0, 1);
+
+        for (int i = 0; i < additional.length; i++)
+            expanded.add(additional[i], 0, 2 + i);
 
         alert.getDialogPane().setContent(expanded);
         alert.getDialogPane().setPrefWidth(700);

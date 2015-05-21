@@ -11,6 +11,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.List;
+import java.util.regex.Pattern;
 
 /**
  * Needs Documentation
@@ -21,6 +22,7 @@ import java.util.List;
 class TypingMethodology extends BaseMethodology {
 
     private final Keyboard keys;
+    private final Pattern wsPattern = Pattern.compile("\\s+");
 
     TypingMethodology(Keyboard keys) {
         this.keys = keys;
@@ -67,33 +69,42 @@ class TypingMethodology extends BaseMethodology {
 
         boolean block = false;
         outer:
-        for (final String l : lines) {
+        for (final String line : lines) {
+            String text = wsPattern.matcher(line.trim()).replaceAll(" ");
+
             // Ignore Empty Lines and Comments
-            if (l.length() == 0) {
+            if (text.length() == 0) {
                 continue;
-            } else if (l.startsWith("--[[")) {
+            } else if (text.startsWith("--[[")) {
                 block = true;
                 continue;
-            } else if (block && (l.endsWith("]]") || l.endsWith("]]--"))) {
+            } else if (block && (text.endsWith("]]") || text.endsWith("]]--"))) {
                 block = false;
                 continue;
-            } else if (l.startsWith("--")) {
+            } else if (text.startsWith("--")) {
                 continue;
-            }
+            } else if (block)
+                continue;
 
             // Basically a copy of type(String) but this gives us more control
             // to pause and stop on a per character basis, not a per line basis.
-            final char[] characters = l.trim().toCharArray();
+            final char[] characters = text.trim().toCharArray();
             int commentChars = 0;
             for (final char c : characters) {
                 // Cancel typing once we hit a comment
-                if (c == '-')
+                if (c == '-') {
                     commentChars++;
-                else
+                } else {
+                    if (commentChars == 1)
+                        type('-');
                     commentChars = 0;
+                }
 
-                if (commentChars >= 2)
-                    break;
+                if (commentChars > 0) {
+                    if (commentChars == 2)
+                        break;
+                    continue;
+                }
 
                 // Pause Loop
                 while (this.isPaused() || this.isAltDown()) {
