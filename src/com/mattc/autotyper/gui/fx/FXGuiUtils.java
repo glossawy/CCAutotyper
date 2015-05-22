@@ -76,14 +76,10 @@ public class FXGuiUtils {
         }
     }
 
-    public static boolean isFXRobotAvailable() {
-        try {
-            return Class.forName("com.sun.glass.ui.Robot") != null;
-        } catch (final ClassNotFoundException e) {
-            return false;
-        }
-    }
-
+    /**
+     * Please use {@link Stage#setAlwaysOnTop(boolean)} instead.
+     */
+    @Deprecated
     public static void makeAlwaysOnTop(final Stage stage) {
         stage.setAlwaysOnTop(true);
     }

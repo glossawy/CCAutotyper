@@ -23,8 +23,6 @@ import com.mattc.autotyper.util.Console;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-// TODO Consider transferring to ControlsFX for AutoCompletion or re-working this framework to be more useful
-
 /**
  * A TextField that handles AutoCompletion
  *
@@ -183,6 +181,11 @@ public class AutoCompleteTextField extends TextField implements AutoCompleteCont
         this.popup.show(AutoCompleteTextField.this, origin.getX(), origin.getY() + getHeight());
     }
 
+    /**
+     * Installs listeners that ensure the Popup will follow the Stage as it is moved.
+     *
+     * @param stage Stage
+     */
     public void installXYChangeListeners(Stage stage) {
         stage.xProperty().addListener((obs, oldValue, newValue) -> {
             final double dX = newValue.doubleValue() - oldValue.doubleValue();

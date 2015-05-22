@@ -36,8 +36,11 @@ import java.util.prefs.Preferences;
 @FXCompatible
 public class FXConfirmDialog extends Stage {
 
+    private static final String[] THEMES = {"neat", "blackboard"};
+    private static final String DEFAULT_SYNTAX_LUA = "Lua";
     private static final Preferences prefs = Preferences.userNodeForPackage(FXAutotyperWindow.class);
     private static final int BUTTON_WIDTH = 200;
+
     private final WebView webView = new WebView();
     private volatile boolean approved = false;
 
@@ -50,7 +53,7 @@ public class FXConfirmDialog extends Stage {
 
     private String codeSnapshot;
     private String theme = "neat";
-    private Mode mode = ModeParser.getModeFor("Lua");
+    private Mode mode = ModeParser.getModeFor(DEFAULT_SYNTAX_LUA);
 
     private FXConfirmDialog(Window owner, String code) {
         super(StageStyle.UTILITY);
@@ -101,7 +104,7 @@ public class FXConfirmDialog extends Stage {
 
     private void loadPrefs() {
         this.theme = prefs.get(Strings.PREFS_CONFIRM_THEME, this.theme);
-        this.mode = ModeParser.getModeFor(prefs.get(Strings.PREFS_CONFIRM_MODE, "Lua"));
+        this.mode = ModeParser.getModeFor(prefs.get(Strings.PREFS_CONFIRM_MODE, DEFAULT_SYNTAX_LUA));
     }
 
     private Parent assemble() {
@@ -132,7 +135,7 @@ public class FXConfirmDialog extends Stage {
 
         final HBox optBox = new HBox(20);
         final Button cpyBtn = new Button("Copy Code");
-        final ComboBox<String> themeColor = new ComboBox<>(FXCollections.observableArrayList("neat", "blackboard"));
+        final ComboBox<String> themeColor = new ComboBox<>(FXCollections.observableArrayList(THEMES));
         final ComboBox<String> syntaxes = new ComboBox<>(FXCollections.observableList(ModeParser.getPossibleModes()));
 
         syntaxes.getSelectionModel().select(this.mode.displayName);
@@ -150,7 +153,7 @@ public class FXConfirmDialog extends Stage {
         themeColor.getSelectionModel().selectedItemProperty().addListener((obs, oldValue, newValue) -> {
             if (newValue == null) return;
 
-            FXConfirmDialog.this.theme = newValue;
+            FXConfirmDialog.this.theme = newValue.toLowerCase();
             FXConfirmDialog.this.webView.getEngine().loadContent(getFormattedTemplate());
         });
 

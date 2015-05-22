@@ -36,6 +36,7 @@ import javafx.stage.Modality;
 import javafx.stage.Stage;
 import javafx.stage.StageStyle;
 import com.google.common.base.Charsets;
+import com.google.common.base.Preconditions;
 import com.google.common.collect.EvictingQueue;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
@@ -294,8 +295,17 @@ public class FXAutotyperWindow extends Application {
                 private void onError(WorkerStateEvent e) {
                     setInputDisabled(false);
                     primaryStage.show();
-                    Console.exception(e.getSource().getException());
-                    showError("Autotyping Failed!: " + e.getSource().getException().getMessage());
+
+                    Preconditions.checkNotNull(e.getSource());
+
+                    Throwable ex = e.getSource().getException();
+                    if (ex != null) {
+                        Console.exception(ex);
+                        showError("Autotyping Failed!: " + ex.getMessage());
+                    } else {
+                        Console.bigWarning("Autotyping Failed: Unknown Reason! Source: " + e.getSource());
+                        showError("Autotyping Failed!: Unknown Reason!");
+                    }
                 }
 
                 private void setInputDisabled(boolean state) {
@@ -452,12 +462,14 @@ public class FXAutotyperWindow extends Application {
         Console.empty();
         Console.info("LOADING VERSION: " + version);
 
-        if (AppVersion.compareTo(version) != 0)
+        if (AppVersion.compareTo(version) != 0) {
             try {
                 prefs.clear();
+                Console.info("WARNING: Current Version is " + Ref.VERSION + "... Preferences will be erased to maintain compatibility.");
             } catch (BackingStoreException e) {
                 Console.exception(e);
             }
+        }
 
         this.waitTimeProperty.set(this.prefs.getInt(Strings.PREFS_GUI_WAIT, 5000));
         this.inputDelayProperty.set(this.prefs.getInt(Strings.PREFS_GUI_INPUTDELAY, 40));

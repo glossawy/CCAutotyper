@@ -196,18 +196,19 @@ public class Downloader {
 
     private static void cleanCache() throws IOException {
         List<Path> list = Files.list(CACHE_DIR)
-                .filter((p) -> p.getFileName().endsWith(".cctmp"))
+                .filter((p) -> p.toString().endsWith(".cctmp"))
                 .sorted(FileAgeComparator.INSTANCE)
                 .collect(Collectors.toList());
 
-        while (list.size() > 20) {
+        // Remove Oldest Files until size() < n
+        // Retains n cached files
+        while (list.size() >= 20) {
             Path p = list.remove(0);
 
             String filename = p.getFileName().toString();
             filename = filename.substring(0, filename.indexOf('.'));
             removeHash(filename);
 
-            Files.move(p, p = Paths.get(p.toString() + ".cclck"));
             Files.deleteIfExists(p);
         }
     }
@@ -229,7 +230,7 @@ public class Downloader {
     private static void saveHashes() {
         try {
             OutputStream os = Files.newOutputStream(CACHE_HASHES, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
-            IOUtils.doThenClose(os, (stream) -> hashProps.store(stream, ""));
+            IOUtils.doThenClose(os, (stream) -> hashProps.store(stream, "\n Stores the hashes for all files currently in the cache.\n Used Later to determine integrity and for History.\n"));
         } catch (IOException e) {
             // ignore
         }

@@ -208,7 +208,8 @@ public class Autotyper {
         System.out.println();
         System.out.println("\tExample:");
         System.out.println("\t\t" + Strings.EXAMPLE_EXECUTION);
-        System.out.println("\t\tGUI Coming Soon!");
+        System.out.println("\t\t Access the GUI using the 'gui' command argument by itself!");
+        System.out.println();
     }
 
     /**

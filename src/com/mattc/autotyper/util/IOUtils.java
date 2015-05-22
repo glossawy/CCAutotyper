@@ -41,7 +41,7 @@ public final class IOUtils {
     }
 
     /**
-     * Does some action with a Closeable and then closes it. Akin to the common file useage idiom
+     * Does some action with a Closeable and then closes it. Akin to the common file usage idiom
      * found in languages like Ruby and Python.
      *
      * @param item     - Item to Use
@@ -49,7 +49,7 @@ public final class IOUtils {
      * @param <T>      - Type that implements Closeable
      * @return The outcome of the task
      */
-    public static <T extends Closeable> Outcome doThenClose(T item, ExceptionalConsumer<T> consumer) {
+    public static <T extends Closeable> Outcome doThenClose(T item, FallibleConsumer<T> consumer) {
         Outcome outcome = Outcome.success();
         try {
             consumer.accept(item);
@@ -89,7 +89,7 @@ public final class IOUtils {
     }
 
     @FunctionalInterface
-    public interface ExceptionalConsumer<T> {
+    public interface FallibleConsumer<T> {
         void accept(T val) throws Exception;
     }
 
