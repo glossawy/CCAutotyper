@@ -2,6 +2,45 @@ CCAutotyper [![Build Status](https://travis-ci.org/Matt529/CCAutotyper.svg)](htt
 ===========
 An Autotyper for ComputerCraft players who use servers that have HTTP Disabled!
 
+###v2.1.1 to v3.0.0 -- Minification and Polish Update
+---
+####**[Primary]**
+- New 'scripts' directory in which any non-java scripts will be stored for use later on
+ * Primarily included as of this update to allow for use of luamin
+- Minification of Lua Code is now possible (to reduce character count and speed up the typing process) using luamin through nashorn
+- Files downloaded from Pastebin or some URL are now stored in a '.cctyper-cache' hidden directory (Up to 20 files are stored)
+ * This likely warrants an uninstall script to handle removing any hidden directories/files
+- Fixes for autotyping in which Multi-line comments and in-line comments were not handled correctly
+ * This was likely due to API restructuring and not an ages old bug
+- Small fix to try and ensure that icons appear in Ubuntu-based OS' on load, not on show
+- Multiple URL (non-pastebin) files are now cached, moved away from calling them all "cc-auto-file" and now uses a random crc32c based naming system
+
+####**[Notable]**
+- Cleaned up certain text snafus
+- Added a minification checkbox which has it's state saved between each instance
+- Added tooltips to certain things of importance such as the minification check box, location field, menubar buttons (top left)
+- Code Preview now loads Minified code instead of original code so that the user may deem if the Minification was worth it or too dangerous
+- New links to the Github Page and the Developer Website on the Copyright dialog
+
+####**[Minor/Internal]**
+- New 'minify' package where any minification APIs will reside, currently this is all centralized in a single 'Minifier' class that uses luamin to minify Lua Code using the Nashorn Scripting Engine. 
+- Moved setAppIcons to Resources instead of FXAutotyperWindow
+- Further documentation effort... hopefully some day....
+- Reticulated splines
+- New TimedTooltip that allows modificaiton of the Open Time (time between hover and showing the tooltip) using Reflection to create a TooltipBehavior
+- New WebLink that puts the basic function of a Hyperlink in one call. Creates a Hyperlink with a URL location to go to using HostServices or something similar
+- More debug information as well as more readable documentation (i.e. Loading and Saving Preferences)
+- FXGuiUtils.buildLongAlert now allows you to specify a list of Nodes to include at the bottom of the dialog
+- GuiAccessors must now provide a openSite method that opens a URL in a web browser
+- TypingMethodology fixed to handle spaces, comments and multi-line comments correctly
+- Console.empty() now prints an empty line
+- Web Files (non-pastebin) are now stored in the cache using a Random filename that is dervied from the result of CRC32C and then turned into a hex string
+ * Much better than just "cc-auto-file"
+- Cleaned up legacy stuff, especially in the console interface. Swing needs to be cleaned.
+- Updated libraries as necessary and ensured compatibility
+
+---
+
 ###v2.1.0 to v2.1.1 (too few visible changes to warrant a minor update)
 ---
 ####**[Noticeable]**
