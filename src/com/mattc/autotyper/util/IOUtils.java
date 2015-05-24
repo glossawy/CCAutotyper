@@ -9,6 +9,10 @@ import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.charset.Charset;
+import java.nio.file.attribute.FileAttribute;
+import java.nio.file.attribute.PosixFilePermission;
+import java.nio.file.attribute.PosixFilePermissions;
+import java.util.Set;
 
 /**
  * Needs Documentation
@@ -17,6 +21,8 @@ import java.nio.charset.Charset;
  *         Created 4/4/2015 at 12:40 AM
  */
 public final class IOUtils {
+
+    public static final FileAttribute<Set<PosixFilePermission>> STANDARD_PERMS = PosixFilePermissions.asFileAttribute(PosixFilePermissions.fromString("rw-rw-rw-"));
 
     public static boolean checkConnectionSuccess(URL url) throws IOException {
         final HttpURLConnection conn = (HttpURLConnection) url.openConnection();

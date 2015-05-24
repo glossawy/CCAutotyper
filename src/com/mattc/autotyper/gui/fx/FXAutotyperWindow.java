@@ -5,8 +5,10 @@ import static javafx.scene.input.KeyCombination.ModifierValue.UP;
 
 import javafx.application.Application;
 import javafx.application.Platform;
+import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.IntegerProperty;
 import javafx.beans.property.ObjectProperty;
+import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.property.SimpleIntegerProperty;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.concurrent.Task;
@@ -19,6 +21,7 @@ import javafx.scene.Scene;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
 import javafx.scene.control.ButtonType;
+import javafx.scene.control.CheckBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.RadioButton;
 import javafx.scene.control.TextField;
@@ -52,6 +55,7 @@ import com.mattc.autotyper.gui.ConfirmFileDialog;
 import com.mattc.autotyper.gui.GuiAccessor;
 import com.mattc.autotyper.gui.LocationHandler;
 import com.mattc.autotyper.meta.Outcome;
+import com.mattc.autotyper.minify.Minifier;
 import com.mattc.autotyper.robot.Keyboard;
 import com.mattc.autotyper.robot.KeyboardMethodology;
 import com.mattc.autotyper.util.Console;
@@ -59,6 +63,7 @@ import com.mattc.autotyper.util.OS;
 
 import java.io.IOException;
 import java.nio.file.Path;
+import java.util.Optional;
 import java.util.Set;
 import java.util.prefs.BackingStoreException;
 import java.util.prefs.Preferences;
@@ -80,6 +85,7 @@ public class FXAutotyperWindow extends Application {
     private final ObjectProperty<Path> fileProperty = new SimpleObjectProperty<>();
     private final IntegerProperty inputDelayProperty = new SimpleIntegerProperty(40);
     private final IntegerProperty waitTimeProperty = new SimpleIntegerProperty(5000);
+    private final BooleanProperty minifyProperty = new SimpleBooleanProperty(false);
 
     private boolean doConfirm;
     private volatile boolean doSave = false;
@@ -118,6 +124,10 @@ public class FXAutotyperWindow extends Application {
             final RadioButton urlBtn = new RadioButton("URL");
             final RadioButton pasteBtn = new RadioButton("Paste");
             final RadioButton autoBtn = new RadioButton("Auto");
+            final CheckBox minifyBtn = new CheckBox("Minify Code?");
+
+            minifyBtn.setTooltip(new TimedTooltip("THIS FEATURE IS IN DEVELOPMENT! ONLY WORKS FOR LUA CODE!\nSpeed up autotyping by reducing character count.\nMay not be effective on *all* files.", 200));
+            minifyBtn.selectedProperty().bindBidirectional(minifyProperty);
             MetaToggleGroup.addTogglesToGroup(btnGroup, fileBtn, Strings.GHOST_TEXT_FSELECT, urlBtn, Strings.GHOST_TEXT_USELECT, pasteBtn, Strings.GHOST_TEXT_PSELECT, autoBtn, Strings.GHOST_TEXT_ASELECT);
             btnGroup.putProperty(fileBtn, META_RANK, 1);
             btnGroup.putProperty(urlBtn, META_RANK, 2);
@@ -129,7 +139,7 @@ public class FXAutotyperWindow extends Application {
             StackPane.setAlignment(startBtn, Pos.BASELINE_RIGHT);
 
             startBtn.setPrefSize(50, 20);
-            buttonBox.getChildren().addAll(fileBtn, urlBtn, pasteBtn, autoBtn);
+            buttonBox.getChildren().addAll(fileBtn, urlBtn, pasteBtn, autoBtn, minifyBtn);
             buttonStack.setId("button-box");
             buttonStack.setPadding(new Insets(15, 25, 15, 25));
             buttonStack.getChildren().addAll(buttonBox, startBtn);
@@ -143,7 +153,7 @@ public class FXAutotyperWindow extends Application {
             final AutoCompleteTextField locField = new AutoCompleteTextField(Lists.newArrayList(locations));
             final InteractiveBox wBox = new InteractiveBox("Wait %t seconds before typing.", Pos.CENTER);
             final InteractiveBox iBox = new InteractiveBox("Wait %t milliseconds between keystrokes.", Pos.CENTER);
-            final InteractiveBox cBox = new InteractiveBox("I %B want to confirm before typing.", Pos.CENTER);
+            final InteractiveBox cBox = new InteractiveBox("I %B want to see a preview before typing.", Pos.CENTER);
             final TextField wField = wBox.getInteractiveChild(0, TextField.class);
             final TextField iField = iBox.getInteractiveChild(0, TextField.class);
             final ToggleButton cBtn = cBox.getInteractiveChild(0, ToggleButton.class);
@@ -158,6 +168,7 @@ public class FXAutotyperWindow extends Application {
             locField.setPromptText(btnGroup.getMetaStringForSelected());
             cBtn.setSelected(this.doConfirm);
 
+            locField.setTooltip(new TimedTooltip("Location from which data can be autotyped from.", 200));
             locBox.getChildren().addAll(locLabel, locField);
 
             FXGuiUtils.setMaxCharCount(wField, 2);
@@ -249,8 +260,21 @@ public class FXAutotyperWindow extends Application {
                         if (outcome.isFailure()) {
                             showError(outcome.reason);
                         } else {
-                            final Path file = handler.handle(textNoTag);
+                            Path file = handler.handle(textNoTag);
                             try {
+                                if (minifyProperty.get()) {
+                                    boolean success = false;
+                                    try {
+                                        file = Minifier.minifyFileToCopy(file);
+                                        success = true;
+                                    } catch (Exception e) {
+                                        Console.exception(e);
+                                    }
+
+                                    if (!success && !promptContinue("Minification Failed! Continue without minification?"))
+                                        return;
+                                }
+
                                 if (FXAutotyperWindow.this.doConfirm) if (!approve(file)) return;
 
                                 fileProperty.set(file);
@@ -392,6 +416,8 @@ public class FXAutotyperWindow extends Application {
 
         final Button infoBtn = new Button("", new ImageView(infoIcon));
         final Button copyBtn = new Button("", new ImageView(copyIcon));
+        infoBtn.setTooltip(new TimedTooltip("Get Info (Opens in Browser)", 200));
+        copyBtn.setTooltip(new TimedTooltip("See Copyright Statement", 200));
 
         final KeyCodeCombination infoAcc = new KeyCodeCombination(KeyCode.I, UP, DOWN, UP, UP, UP);
         final KeyCodeCombination copyAcc = new KeyCodeCombination(KeyCode.C, UP, DOWN, UP, UP, UP);
@@ -439,11 +465,13 @@ public class FXAutotyperWindow extends Application {
         this.prefs.putInt(Strings.PREFS_GUI_WAIT, waitTime);
         this.prefs.putInt(Strings.PREFS_GUI_INPUTDELAY, delay);
         this.prefs.putInt(Strings.PREFS_GUI_SELECTED, selected);
+        this.prefs.putBoolean(Strings.PREFS_GUI_MINIFY, minifyProperty.get());
         this.prefs.putBoolean(Strings.PREFS_GUI_CONFIRM, this.doConfirm);
 
         Console.info("\tWAIT TIME: " + waitTime);
         Console.info("\tIN. DELAY: " + delay);
         Console.info("\tSEL. BTN.: " + selected);
+        Console.info("\tMINIFY?  : " + minifyProperty.get());
         Console.info("\tCON. DLG.: " + this.doConfirm);
         Console.empty();
 
@@ -473,12 +501,14 @@ public class FXAutotyperWindow extends Application {
 
         this.waitTimeProperty.set(this.prefs.getInt(Strings.PREFS_GUI_WAIT, 5000));
         this.inputDelayProperty.set(this.prefs.getInt(Strings.PREFS_GUI_INPUTDELAY, 40));
+        this.minifyProperty.set(this.prefs.getBoolean(Strings.PREFS_GUI_MINIFY, true));
         this.curRank = this.prefs.getInt(Strings.PREFS_GUI_SELECTED, 3);
         this.doConfirm = this.prefs.getBoolean(Strings.PREFS_GUI_CONFIRM, true);
 
         Console.info("\tWAIT TIME: " + waitTimeProperty.get());
         Console.info("\tIN. DELAY: " + inputDelayProperty.get());
         Console.info("\tSEL. BTN.: " + curRank);
+        Console.info("\tMINIFY?  : " + minifyProperty.get());
         Console.info("\tCON. DLG.: " + doConfirm);
         Console.empty();
 
@@ -555,6 +585,15 @@ public class FXAutotyperWindow extends Application {
             return FXConfirmDialog.confirm(this.primaryStage, code);
         else
             return new ConfirmFileDialog(null, code.toFile()).isApproved();
+    }
+
+    private boolean promptContinue(String msg) {
+        Alert prompt = new Alert(Alert.AlertType.CONFIRMATION, msg, ButtonType.YES, ButtonType.NO);
+        prompt.setHeaderText("Continue Task?");
+        prompt.initModality(Modality.APPLICATION_MODAL);
+
+        Optional<ButtonType> selection = prompt.showAndWait();
+        return selection.isPresent() && selection.get() == ButtonType.YES;
     }
 
     public static void launch() {

@@ -11,15 +11,61 @@ import javafx.scene.control.TextInputControl;
 import javafx.scene.control.Toggle;
 import javafx.scene.control.ToggleButton;
 import javafx.scene.control.ToggleGroup;
+import javafx.scene.control.Tooltip;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.Priority;
 import javafx.stage.Stage;
+import javafx.util.Duration;
+import com.mattc.autotyper.util.Console;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.Field;
 
 public class FXGuiUtils {
+
+    public static void setTooltipDelay(Tooltip tooltip, double openDelayInMillis, double closeDelayInMillis, double visibleDurationInMillis) {
+        try {
+            Class<?> TTBehaviourClass = null;
+            Class<?>[] declaredClasses = Tooltip.class.getDeclaredClasses();
+            for (Class c : declaredClasses) {
+                if (c.getCanonicalName().equals("javafx.scene.control.Tooltip.TooltipBehavior")) {
+                    TTBehaviourClass = c;
+                    break;
+                }
+            }
+            if (TTBehaviourClass == null) {
+                // abort
+                return;
+            }
+            Constructor<?> constructor = TTBehaviourClass.getDeclaredConstructor(
+                    Duration.class, Duration.class, Duration.class, boolean.class);
+            if (constructor == null) {
+                // abort
+                return;
+            }
+            constructor.setAccessible(true);
+            Object newTTBehaviour = constructor.newInstance(
+                    new Duration(openDelayInMillis), new Duration(visibleDurationInMillis),
+                    new Duration(closeDelayInMillis), false);
+
+            Field ttbehaviourField = Tooltip.class.getDeclaredField("BEHAVIOR");
+            if (ttbehaviourField == null) {
+                // abort
+                return;
+            }
+            ttbehaviourField.setAccessible(true);
+
+            // Cache the default behavior if needed.
+            Object defaultTTBehavior = ttbehaviourField.get(Tooltip.class);
+            ttbehaviourField.set(Tooltip.class, newTTBehaviour);
+
+        } catch (Exception e) {
+            Console.exception(e);
+        }
+    }
 
     public static void setToggleTextSwitch(final ToggleButton btn, final String onText, final String offText) {
 

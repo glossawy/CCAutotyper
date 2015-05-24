@@ -58,6 +58,7 @@ public class Strings {
     public static final String PREFS_GUI_INPUTDELAY = "input_delay";
     public static final String PREFS_GUI_MEMORY = "locations_";
     public static final String PREFS_GUI_SELECTED = "selected_radio";
+    public static final String PREFS_GUI_MINIFY = "minify_code_option";
 
     public static final String PREFS_CONFIRM_THEME = "confirm_theme";
     public static final String PREFS_CONFIRM_MODE = "confirm_mode";
