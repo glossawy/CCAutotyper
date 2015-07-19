@@ -124,9 +124,9 @@ public class FXAutotyperWindow extends Application {
             final RadioButton urlBtn = new RadioButton("URL");
             final RadioButton pasteBtn = new RadioButton("Paste");
             final RadioButton autoBtn = new RadioButton("Auto");
-            final CheckBox minifyBtn = new CheckBox("Minify Code?");
+            final CheckBox minifyBtn = new CheckBox("Minify Lua Code?");
 
-            minifyBtn.setTooltip(new TimedTooltip("THIS FEATURE IS IN DEVELOPMENT! ONLY WORKS FOR LUA CODE!\nSpeed up autotyping by reducing character count.\nMay not be effective on *all* files.", 200));
+            minifyBtn.setTooltip(new TimedTooltip("Speed up autotyping by reducing character count.\nMay not be effective on *all* files.\n\nWill fail on non-Lua code.", 200));
             minifyBtn.selectedProperty().bindBidirectional(minifyProperty);
             MetaToggleGroup.addTogglesToGroup(btnGroup, fileBtn, Strings.GHOST_TEXT_FSELECT, urlBtn, Strings.GHOST_TEXT_USELECT, pasteBtn, Strings.GHOST_TEXT_PSELECT, autoBtn, Strings.GHOST_TEXT_ASELECT);
             btnGroup.putProperty(fileBtn, META_RANK, 1);

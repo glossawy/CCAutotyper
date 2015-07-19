@@ -98,7 +98,7 @@ public final class JPredicates {
     }
 
     /**
-     * Converts the Given {@link java.util.function.Predicate} to a {@link com.google.common.base.Predicate}.
+     * Converts the Given {@link Predicate} to a {@link com.google.common.base.Predicate}.
      *
      * @param predicate Java Predicate
      * @param <T>       Predicate Type
@@ -114,7 +114,7 @@ public final class JPredicates {
     }
 
     /**
-     * Converts the Given {@link com.google.common.base.Predicate} to a {@link java.util.function.Predicate}.
+     * Converts the Given {@link com.google.common.base.Predicate} to a {@link Predicate}.
      *
      * @param predicate Google Predicate
      * @param <T>       Predicate Type

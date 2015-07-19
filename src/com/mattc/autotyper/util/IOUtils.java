@@ -1,7 +1,9 @@
 package com.mattc.autotyper.util;
 
+import com.google.common.collect.Maps;
 import com.google.common.io.Files;
 import com.mattc.autotyper.gui.SingleStringProcessor;
+import javafx.util.Pair;
 
 import java.io.Closeable;
 import java.io.File;
@@ -9,9 +11,12 @@ import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.charset.Charset;
+import java.nio.file.Path;
+import java.nio.file.attribute.DosFileAttributes;
 import java.nio.file.attribute.FileAttribute;
 import java.nio.file.attribute.PosixFilePermission;
 import java.nio.file.attribute.PosixFilePermissions;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -22,7 +27,7 @@ import java.util.Set;
  */
 public final class IOUtils {
 
-    public static final FileAttribute<Set<PosixFilePermission>> STANDARD_PERMS = PosixFilePermissions.asFileAttribute(PosixFilePermissions.fromString("rw-rw-rw-"));
+    public static final FileAttribute<Set<PosixFilePermission>> POSIX_STANDARD_PERMS = PosixFilePermissions.asFileAttribute(PosixFilePermissions.fromString("rw-rw-rw-"));
 
     public static boolean checkConnectionSuccess(URL url) throws IOException {
         final HttpURLConnection conn = (HttpURLConnection) url.openConnection();
