@@ -16,6 +16,6 @@ if [[ "$_java" ]]; then
 	if [[ "$version" > "1.7" ]]; then
 		"$_java" -jar ccautotyper.jar gui 
 	else
-		echo "Java Version Must be 1.7 or Greater! You are using Java $version!"
+		echo "Java Version Must be 1.8 or Greater! You are using Java $version!"
 	fi
 fi
