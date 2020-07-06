@@ -1,0 +1,298 @@
+commit f5886373fa9d3393f6359652185af6eda04584ff
+Author: Glossawy <4606234+Glossawy@users.noreply.github.com>
+Date:   Mon Jul 6 05:35:45 2020 -0400
+
+    name
+
+commit 80b634eefbc21a5148b7588d35f119d3c41e1710
+Author: Glossawy <4606234+Glossawy@users.noreply.github.com>
+Date:   Thu Jul 23 14:56:05 2015 -0400
+
+    README Update
+
+commit 97fc49973dde1976450738c46f63637c49da8095
+Author: Glossawy <4606234+Glossawy@users.noreply.github.com>
+Date:   Sun Jul 19 17:44:26 2015 -0400
+
+    CHANGES Update
+
+commit 0849ce7969457b90111a4673152d44c7e8bac752
+Author: Glossawy <4606234+Glossawy@users.noreply.github.com>
+Date:   Sun Jul 19 17:33:15 2015 -0400
+
+    Quick Deployment Fix pre-release
+
+commit a0b9ee11ebd6a054f226496822aaada5f1e30ad6
+Author: Glossawy <4606234+Glossawy@users.noreply.github.com>
+Date:   Sun Jul 19 17:02:23 2015 -0400
+
+    Post-final Fixes for Windows computers.
+    
+    Mostly relating to slips of the mind when setting POSIX file permissions (i.e. all linux files are given the permissions "rw-rw-rw-" for ease of access by the program, most of these files are in the .cctyper-cache folder), there was no check on filesystem and so attempts to set POSIX permissions on a windows computer caused an exception. The check fixes this so the minifier experience on both windows and linux is identical.
+
+commit e6fda49a48c1413d5cff6e84b27708baee534d1c
+Author: Glossawy <4606234+Glossawy@users.noreply.github.com>
+Date:   Sun May 24 03:38:16 2015 -0400
+
+    CHANGES Update
+
+commit 1fcb4ad96af879f549ace83f5c2a9dbeb7f7ff6a
+Author: Glossawy <4606234+Glossawy@users.noreply.github.com>
+Date:   Sun May 24 03:07:06 2015 -0400
+
+    v3.0.0 Official Release -- Initial Minification and Polish
+    
+    This update brings many bug fixes that will be described in the Change
+    Log. Many relate to GUI functionality and user-friendliness as well as
+    overall codebase maintainability. One of the most notable additions is
+    the "scripts" folder which contains any scripts used by the application
+    in operation, currently this is only 'luamin' which runs as a JavaScript
+    script under the Nashorn JavaScript engine provided in Java 8.
+    
+    luamin allows for the minification of Lua source code. Notably it does
+    not work perfectly on all files.
+    
+    Some tooltips have been added and some spelling mishaps have been fixed.
+    Additionally some of the text has been clarified.
+    
+    The application will now also maintain a small cache of files in it's
+    working directory where any downloaded f iles are stored for ease of use
+    later in operation. We should probably add an uninstall script to the
+    application.
+    
+    Due to the numerous bug fixes in this version, it was deemed necessary
+    to make a 3.0.0 major update release. It is that much better.
+
+commit 5e37e13b192aa63d9b6061e6178257af2051dac3
+Author: Glossawy <4606234+Glossawy@users.noreply.github.com>
+Date:   Thu May 21 23:08:45 2015 -0400
+
+    Minor Update before 3.0.0 Release
+
+commit e59e210effad3771d3339d069abfd85073397147
+Author: Glossawy <4606234+Glossawy@users.noreply.github.com>
+Date:   Wed May 20 23:16:31 2015 -0400
+
+    Small Caching Fix, Icons, Debug Information and Methodology Fix
+    
+    Changed how non-pastebin files are handled as to produce a .cctemp file
+    in the cache with a name that is the base 36 result of a crc32c
+    checksum. This is a much better solution then using "cc-auto-file".
+    
+    Moved the setIcons method to Resources as a static method. Added better
+    debug information when loading and saving preferences. WebLink is a
+    Hyperlink wrapper that is functional on instantiation.
+    
+    TypingMethodology had a BAD issue with in-line and multi-line comments.
+    This has been resolved through a new flag and logic fixes. Also added a
+    Pattern that removes unnecessary whitespace, condensing down to one
+    space.
+    
+    GuiAccessor now has a openSite(String) method intended ot be used to
+    access a GUI Framework-dependent method of browsing to websites using
+    the Default Browser (i.e. HostServices or Desktop for JavaFX or Swing
+    respectively).
+    
+    Other cleanup.
+
+commit 287d057e6bab48ad6ca88d96c4e9cd622e600da5
+Author: Glossawy <4606234+Glossawy@users.noreply.github.com>
+Date:   Thu May 14 23:30:56 2015 -0400
+
+    Cleanup and Re-Implementation
+    
+    Updated JNativeHooks (No more variable key codes!), implemented file
+    caching for Downloader (files won't be downloaded everytime, they are
+    saved in a hidden cache and then their hashes are saved to determine if
+    a new file must be downloaded). Fixed alt debacle and started cleaning
+    up old java.io references to java.nio.
+
+commit b3fa4185aec87dd014da45e52102a76acc4b97dd
+Author: Glossawy <4606234+Glossawy@users.noreply.github.com>
+Date:   Wed Apr 29 21:43:30 2015 -0400
+
+    Further Cleanup
+    
+    Starting to remove unnecessary annotations and classes (replacing with
+    Java 8 Constructs), continued Documentation effort (before I forget!),
+    simplification and java 8-ification. OS.java fixes, JPredicates (Google
+    Predicates and Java Predicates Bridge), de-godify IOUtils and
+    FXGuiUtils, Moved InformedOutcome inner class ot Outcome public class.
+    
+    Format/Inspection Cleanup via IntelliJ
+
+commit 75decfe53bb41f9f75f582caae4a2d716594119e
+Author: Glossawy <4606234+Glossawy@users.noreply.github.com>
+Date:   Fri Apr 24 23:59:24 2015 -0400
+
+    Further movement towards a realistic API
+
+commit 9dab147b8acb06dbc77e76cce63e6731a5adfa24
+Author: Glossawy <4606234+Glossawy@users.noreply.github.com>
+Date:   Thu Apr 2 19:53:52 2015 -0400
+
+    2.1.0 to 2.1.1 -- See CHANGES.md for summary
+
+commit d1934679279f6a90b53e845b0ec81f9c663a8507
+Author: Glossawy <4606234+Glossawy@users.noreply.github.com>
+Date:   Mon Mar 30 02:20:16 2015 -0400
+
+    Java 8 update
+
+commit 6936cf2e7818502d74de8f6b1784f88f7b6320b7
+Author: Glossawy <4606234+Glossawy@users.noreply.github.com>
+Date:   Mon Mar 30 02:18:54 2015 -0400
+
+    Java 8 update
+
+commit d9e68788ce1d06ee0e839906f2a60af3e19415ff
+Author: Glossawy <4606234+Glossawy@users.noreply.github.com>
+Date:   Mon Mar 30 02:09:10 2015 -0400
+
+    Update Travis CI to use oraclejdk8
+
+commit 5c09585bcb468b9c84b3176fc5b43268fec9a4ff
+Author: Glossawy <4606234+Glossawy@users.noreply.github.com>
+Date:   Mon Mar 30 01:48:12 2015 -0400
+
+    Change Log Update
+
+commit 2da9aa22d21d9560f40f0d3dd3987e203fedce32
+Author: Glossawy <4606234+Glossawy@users.noreply.github.com>
+Date:   Mon Mar 30 01:36:21 2015 -0400
+
+    Officially Deploying as a 1.8 Application, New Typing Scheme, New Identification Scheme for Location History, General Conversion to JavaFX 8 and JavaFX Properties
+
+commit 6641faba86974c0894fbaf9f31c5b9c5b4a5cb79
+Author: Glossawy <4606234+Glossawy@users.noreply.github.com>
+Date:   Sat Jan 10 14:05:09 2015 -0500
+
+    Changes for v2.0a Patch
+
+commit 4f91adc9fd9efe5b6edd427a62854ad8a459558e
+Author: Glossawy <4606234+Glossawy@users.noreply.github.com>
+Date:   Sat Jan 10 13:55:09 2015 -0500
+
+    Resolves Issue #3, Issues #1 and #2 resolved in 2.0a update. No new version released. v2.0a patched.
+
+commit 6a787287b0e2729a8992c17f38688e6afdc27093
+Author: Glossawy <4606234+Glossawy@users.noreply.github.com>
+Date:   Sat Jan 10 00:06:25 2015 -0500
+
+    v2.0a Changelog
+    
+    Signed-off-by: Matthew Crocco <matthewcrocco@gmail.com>
+
+commit 02c28de774a5af8e928c9cf4c0dadb48b6dad1a7
+Author: Glossawy <4606234+Glossawy@users.noreply.github.com>
+Date:   Fri Jan 9 23:48:41 2015 -0500
+
+    Quick Autotyping Backspace Fix
+    
+    Signed-off-by: Matthew Crocco <matthewcrocco@gmail.com>
+
+commit 2f2ec4d266693d8ed74b995715529fa2f32981c4
+Author: Glossawy <4606234+Glossawy@users.noreply.github.com>
+Date:   Fri Jan 9 23:37:03 2015 -0500
+
+    v2.0 -- FX Edition. Can still default to Swing if necessary. Code clean up.
+    
+    Signed-off-by: Matthew Crocco <matthewcrocco@gmail.com>
+
+commit 023964659ad320396ac3d35111fe95d3a261d427
+Author: Glossawy <4606234+Glossawy@users.noreply.github.com>
+Date:   Fri Jan 2 16:06:49 2015 -0500
+
+    Update CHANGES.md
+
+commit 7009a23492c5f112b5046b09e42620b04b580510
+Author: Glossawy <4606234+Glossawy@users.noreply.github.com>
+Date:   Fri Jan 2 16:05:23 2015 -0500
+
+    Changelog
+
+commit b36018094e363868a4362bbcafff1cb3a1c6a89f
+Author: Glossawy <4606234+Glossawy@users.noreply.github.com>
+Date:   Fri Jan 2 01:36:51 2015 -0500
+
+    Work on v1.2b: Code Confirmation (Optional + Syntax Highlighting), Location History, AutoCompletion, Inclusion of RSyntaxTextArea Library and AutoComplete Library (Skipped to v1.2b in-dev)
+
+commit 084faa525a8d88450d329bbfd43e54217e5e4a16
+Author: Glossawy <4606234+Glossawy@users.noreply.github.com>
+Date:   Thu Jan 1 16:50:01 2015 -0500
+
+    README Update
+
+commit d8a11420619febceb0f35362de1b4700137cf46f
+Author: Glossawy <4606234+Glossawy@users.noreply.github.com>
+Date:   Thu Jan 1 16:45:59 2015 -0500
+
+    README Update
+
+commit 5bd79a0d97a5f8c5795a2db4fcb55283e8fdb636
+Author: Glossawy <4606234+Glossawy@users.noreply.github.com>
+Date:   Sat Dec 27 19:56:14 2014 -0500
+
+    Initial GUI Release. Comes with Unix and Windows Executables (.sh and .exe) Launch4j XML Script and Unix Shell Script available for edit in the new 'deploy' folder.
+    
+    Signed-off-by: Matthew Crocco <matthewcrocco@gmail.com>
+
+commit bd7a704399096d6a0b7ec821dfbbb97d00f3f459
+Author: Glossawy <4606234+Glossawy@users.noreply.github.com>
+Date:   Fri Dec 26 00:47:53 2014 -0500
+
+    MAJOR FIX: Downgraded to 1.7
+
+commit 9e8a61a5025ff377c6477ddf3dec97dfedd9a40b
+Author: Glossawy <4606234+Glossawy@users.noreply.github.com>
+Date:   Fri Dec 26 00:43:39 2014 -0500
+
+    Fixed POM Source/Target Version
+    
+    Signed-off-by: Matthew Crocco <matthewcrocco@gmail.com>
+
+commit b7150134aa064d6f7e937f4e72fd05dd4d4b5c87
+Author: Glossawy <4606234+Glossawy@users.noreply.github.com>
+Date:   Fri Dec 26 00:40:26 2014 -0500
+
+    POM Fix. Should automatically locate the libs dependencies
+    
+    Signed-off-by: Matthew Crocco <matthewcrocco@gmail.com>
+
+commit f44a327f35b739e7b7441b3c7bb6a174242bc41e
+Author: Glossawy <4606234+Glossawy@users.noreply.github.com>
+Date:   Fri Dec 26 00:02:21 2014 -0500
+
+    Readme Update for Travis CI
+
+commit 44bac6dea409a4bb6881f33854850cd8ec5261ea
+Author: Glossawy <4606234+Glossawy@users.noreply.github.com>
+Date:   Thu Dec 25 23:59:00 2014 -0500
+
+    Added JNativeHooks as a dependency, Pause/Termination Functionality, Cleanup/Documentation, Copyright Obligations, Removed Non-Related Copyright Statements, Updated Some Utilities to More Recent Versions (i.e. Vector2)
+    
+    GUI Still Unusable
+    
+    Signed-off-by: Matthew Crocco <matthewcrocco@gmail.com>
+
+commit f1ea0bac51231a8e064fa5358ce7feeae13f94e6
+Author: Glossawy <4606234+Glossawy@users.noreply.github.com>
+Date:   Thu Dec 25 03:03:34 2014 -0500
+
+    README Update for Travis CI
+    
+    Signed-off-by: Matthew Crocco <matthewcrocco@gmail.com>
+
+commit 1299a309256cc004c88cdb4503b85d94acf0d9fe
+Author: Glossawy <4606234+Glossawy@users.noreply.github.com>
+Date:   Thu Dec 25 03:01:37 2014 -0500
+
+    Initial Commit After Cleanup. Documentation and Further Cleanup Needed.
+    
+    Signed-off-by: Matthew Crocco <matthewcrocco@gmail.com>
+
+commit edf47dd6e7e465a9c6b4b4dec4fe527dc334d652
+Author: Glossawy <4606234+Glossawy@users.noreply.github.com>
+Date:   Thu Dec 25 02:57:53 2014 -0500
+
+    Initial commit
